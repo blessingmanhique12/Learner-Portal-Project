@@ -1,0 +1,10 @@
+Students must be able to register, sign-in, sign-out and authenticate the input.
+Learners must be able to create, view, edit , complete and delete tasks.
+Learners must be able to book support sessions.
+The Dashboard should have progress calculations.
+Learners should be able to search, filter and sort on tasks.
+Cookie-based preference such as theme, display mode or last selected filter. Passwords and sensitive
+data may not be stored in cookies.
+Learners should be able to play a mini-game with score tracking.
+There should be a printable progress summary. 
+There should be at least one animation driven by JavaScript timers and one controlled multimedia element.
