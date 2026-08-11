@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>JS Fundamentals Challenges</title>
+<style>
+ body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+ h1 { margin-bottom: 4px; }
+ h2 { margin-top: 48px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
+ section { margin-bottom: 20px; }
+ #output, .challenge-output { margin-top: 15px; padding: 12px; border: 2px solid #ccc; border-radius: 6px; }
+ .valid-number { border-color: #2ecc71; background: #eafaf0; }
+ .not-number { border-color: #e74c3c; background: #fdecea; }
+ .challenge-output { background: #f8f9fb; white-space: pre-wrap; }
+ input, button { font-size: 16px; padding: 6px; }
+ .hint { color: #666; font-size: 0.9em; }
+ .notes { background: #fff8e6; border: 1px dashed #e0b400; padding: 10px 14px; border-radius: 6px; margin-top: 10px; }
+ code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; }
+ pre { background: #f4f4f4; padding: 10px; border-radius: 6px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>JS Fundamentals Challenges</h1>
+<p class="hint">Open this page, then open your browser's DevTools console (F12 / Cmd+Opt+I) before you
+start. Challenges 2 and 3 run automatically and print their output on the page and in the console.</p>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 1: DOM interaction + dynamic typing -->
+<!-- ============================================================ -->
+<h2>Challenge 1 - Type Detective (DOM)</h2>
+<section id="challenge1">
+ <p>Type <em>anything</em> into the box (a number, a word, "true", "3.14", etc.) and click Analyze.</p>
+ <input id="userInput" type="text" placeholder="Type something...">
+ <button id="analyzeBtn">Analyze</button>
+ <div id="output">Results will appear here.</div>
+ <div class="notes">
+ Annotate here once done:<br>
+ 1) Characteristic: ___<br>
+ 2) Characteristic: ___<br>
+ 3) Characteristic: ___<br>
+ 4) Limitation: ___
+ </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 2: dynamic typing / coercion -->
+<!-- ============================================================ -->
+<h2>Challenge 2 - Type Coercion Quiz</h2>
+<section id="challenge2">
+ <p>Runs automatically when the page loads.</p>
+ <pre id="coercionOutput" class="challenge-output">Waiting for results...</pre>
+ <div class="notes">
+ Annotate here once done:<br>
+ - Characteristic: ___<br>
+ - Characteristic: ___<br>
+ - Characteristic: ___<br>
+ - Limitation: ___
+ </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- CHALLENGE 3: interpreted execution / hoisting -->
+<!-- ============================================================ -->
+<h2>Challenge 3 - Execution Order Puzzle</h2>
+<section id="challenge3">
+ <p>Also runs automatically on page load. One line intentionally shows the error caused by accessing
+ a <code>let</code> variable before it is initialized.</p>
+ <p>My prediction: ___________________</p>
+ <pre id="executionOutput" class="challenge-output">Waiting for results...</pre>
+ <div class="notes">
+ Annotate here once done:<br>
+ - Characteristic: ___<br>
+ - Characteristic: ___<br>
+ - Characteristic: ___<br>
+ - Limitation: ___
+ </div>
+</section>
+
+<script src="challenges.js" defer></script>
+</body>
+</html>
