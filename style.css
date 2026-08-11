@@ -1,0 +1,13 @@
+ body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+ h1 { margin-bottom: 4px; }
+ h2 { margin-top: 48px; border-bottom: 2px solid #eee; padding-bottom: 6px; }
+ section { margin-bottom: 20px; }
+ #output { margin-top: 15px; padding: 12px; border: 2px solid #ccc; border-radius: 6px; }
+ .valid-number { border-color: #2ecc71; background: #eafaf0; }
+ .not-number { border-color: #e74c3c; background: #fdecea; }
+ input, button { font-size: 16px; padding: 6px; }
+ .hint { color: #666; font-size: 0.9em; }
+ .notes { background: #fff8e6; border: 1px dashed #e0b400; padding: 10px 14px; border-radius: 6px;
+ margin-top: 10px; }
+ code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; }
+ pre { background: #f4f4f4; padding: 10px; border-radius: 6px; overflow-x: auto; }
