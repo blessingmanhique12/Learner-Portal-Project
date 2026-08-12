@@ -38,7 +38,6 @@ For this reason, authentication and authorisation must be enforced by the backen
 The development team would build and maintain its own backend API, authentication system and database.
 Supabase
 Supabase provides authentication, PostgreSQL database storage, APIs and security policies. Unlike Firebase Realtime Database, Supabase uses a relational database.
-
 8. Exposed secrets: API keys, credentials and other sensitive information in JavaScript can be viewed by users.
 
 Bypassed validation: Users can change or bypass client-side validation.
