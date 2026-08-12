@@ -1,0 +1,45 @@
+1. Client-side development refers to code that runs in the user's web browser. It includes HTML, CSS and JavaScript.
+In our project SkillsTrack Learner Support Portal, client-side JavaScript handles form validation, user interactions, DOM updates and requests to Firebase. Since the code runs on the user's device, users can inspect or modify it. 
+
+2. Server-side development refers to code and services running on a server or cloud platform controlled by the organisation or service provider.
+
+Server-side systems handle trusted operations such as authentication, authorisation and permanent data storage. Unlike browser code, server-side logic is not sent to the user.
+In our SkillsTrack Learner Support Portal, we will use Firebase as its backend service instead of a custom server.
+
+3. HTML: Provides the structure for forms, dashboards and task pages.
+CSS: Controls the layout, appearance and responsiveness.
+JavaScript: Adds interaction, validates forms, communicates with Firebase and updates the DOM.
+Firebase Authentication: Handles registration, login, identity verification and authentication tokens.
+Firebase Realtime Database: Stores learner and task data and applies database security rules.
+Firebase REST API: Allows the application to communicate with Firebase using HTTP requests such as GET, POST, PUT, PATCH and DELETE.
+
+4. No.
+Server-side JavaScript usually means JavaScript written by developers and executed on a server using a runtime such as Node.js.
+Firebase is a Backend Service, or BaaS. Google manages the servers and backend infrastructure. SkillsTrack Learner Support Portal configures Firebase and communicates with its services through the SDK or REST API.
+Therefore, Firebase provides backend functionality without the SkillsTrack team having to build its own server-side JavaScript application.
+
+5. Client-side:
+Collects the task information.
+Validates the form.
+Creates the request.
+Sends the request to Firebase.
+Processes the response.
+Updates the page.
+Firebase:
+Verifies the authentication token.
+Checks database security rules.
+Saves the task.
+Returns a success or error response.
+
+6. Browser code can be inspected, changed or bypassed. A user could modify JavaScript or send requests directly to an API.
+For this reason, authentication and authorisation must be enforced by the backend. Firebase Authentication verifies users, while Firebase security rules control access to database data.
+
+7. Node.js + Express + MongoDB/PostgreSQL
+The development team would build and maintain its own backend API, authentication system and database.
+Supabase
+Supabase provides authentication, PostgreSQL database storage, APIs and security policies. Unlike Firebase Realtime Database, Supabase uses a relational database.
+8. Exposed secrets: API keys, credentials and other sensitive information in JavaScript can be viewed by users.
+
+Bypassed validation: Users can change or bypass client-side validation.
+
+Unauthorised access: Users could modify request data, such as changing a user ID, if backend security rules are missing.
