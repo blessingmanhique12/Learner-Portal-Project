@@ -17,3 +17,12 @@
 | Database security/access rules | Server/Cloud Service | Access rules (e.g., Firebase security rules) are defined and enforced on the server/cloud service by design. |
 | Updating the DOM | Client Side | The DOM (Document Object Model) is a browser-side structure, so updating it is purely a client-side task. |
 | Displaying success/error messages | Client Side | Even when triggered by a server response, the actual rendering of the message in the UI happens on the client. |
+
+
+# Part 3 - Design the SkillsTrack System Architecture
+
+Overview
+SkillsTrack is a client-driven web application built on HTML, CSS, and JavaScript in the browser, with Firebase supplying authentication and data storage as remote services. There is no custom backend server: the browser communicates directly with Firebase over the Firebase SDK and/or its REST API. The diagram below traces two concrete flows through the system — a learner signing in, and a learner creating a task — showing exactly where processing happens on the client versus the server, and how each request and response is handled.
+
+
+
