@@ -1,0 +1,226 @@
+
+
+
+*****************************Pseudocode for login page*************************
+****The link for wireframe https://miro.com/welcomeonboard/aG8rS1U1WFZUc0ZMTFRReWlyVXB2cEhZSU1CdkFLall3K1ZRQWw4MXo0SStSc2t3OVpzUUVENzJMYlRzaEgyZncvcktXZ0gwWkVUeVRJOFowYWpxSVNrVmxScnc1a2FRNkdpR3EwMUlsd3YzVEFkMmFrVDFzUXJXcjVCM0VpUUJ0R2lncW1vRmFBVnlLcVJzTmdFdlNRPT0hdjE=?share_link_id=762927494798**********
+
+*******1. Login Page********
+
+DISPLAY Login Page
+
+ASK user to enter:
+    Email
+    Password
+
+DISPLAY "Sign In"
+DISPLAY "Forgot Password?"
+DISPLAY "Sign Up"
+
+IF user clicks "Sign Up" THEN
+    GO TO Registration Page
+END IF
+
+IF user clicks "Forgot Password?" THEN
+    GO TO Forgot/Reset Password Page
+END IF
+
+IF user clicks "Sign In" THEN
+
+    CHECK that Email and Password are not empty
+
+    IF Email OR Password is empty THEN
+        DISPLAY "Please enter your email and password"
+    ELSE
+        SEND Email and Password to Firebase Authentication
+
+        IF login is successful THEN
+            CHECK account type
+
+            IF account type is Learner THEN
+                GO TO Learner Dashboard
+            ELSE IF account type is Facilitator THEN
+                GO TO Facilitator Dashboard
+            END IF
+
+        ELSE
+            DISPLAY "Invalid email or password"
+        END IF
+    END IF
+END IF
+
+*********2. Registration and OTP**********
+
+DISPLAY Registration Page
+
+ASK user to enter:
+    Email
+    Username
+    Phone Number
+    Account Type
+    Password
+
+DISPLAY Account Type:
+    Learner
+    Facilitator
+
+IF user clicks "Create Account" THEN
+
+    VALIDATE all registration information
+
+    IF any required information is missing THEN
+        DISPLAY "Please complete all fields"
+
+    ELSE IF password does not meet requirements THEN
+        DISPLAY "Password must contain at least 6 characters"
+
+    ELSE
+        SEND registration information to Firebase
+
+        GENERATE OTP
+
+        DISPLAY OTP Verification section
+
+        ASK user to choose:
+            Email OTP
+            Phone OTP
+
+        SEND OTP to selected method
+    END IF
+END IF
+
+ASK user to enter OTP
+
+IF entered OTP is correct THEN
+
+    CREATE and verify Firebase account
+
+    SAVE user information to Firebase Realtime Database
+
+    DISPLAY "Account created successfully"
+
+    RETURN user to Login Page
+
+ELSE
+    DISPLAY "Incorrect OTP"
+    ALLOW user to request another OTP
+END IF
+
+
+**********3. Forgot / Reset Password************
+
+DISPLAY Forgot/Reset Password Page
+
+ASK user to enter:
+    Account Email
+    Phone Number or verification information
+
+ASK user to select:
+    Email OTP
+    Phone OTP
+
+IF user clicks "Reset Password" THEN
+
+    CHECK whether account exists in Firebase
+
+    IF account exists THEN
+
+        GENERATE OTP
+
+        SEND OTP to selected email or phone
+
+        ASK user to enter OTP
+
+        IF OTP is correct THEN
+
+            ASK user to enter a new password
+
+            VALIDATE new password
+
+            IF password is valid THEN
+                UPDATE password in Firebase Authentication
+
+                DISPLAY "Password reset successfully"
+
+                RETURN user to Login Page
+            ELSE
+                DISPLAY "Password does not meet requirements"
+            END IF
+
+        ELSE
+            DISPLAY "Invalid OTP"
+        END IF
+
+    ELSE
+        DISPLAY "Account not found"
+    END IF
+END IF
+
+************4. Return to Login***********
+
+IF registration is successful THEN
+    RETURN to Login Page
+END IF
+
+IF password reset is successful THEN
+    RETURN to Login Page
+END IF
+
+DISPLAY:
+    Email field
+    Password field
+    Sign In button
+    Sign Up option
+    Forgot Password option
+
+
+************5. Firebase Processing**********
+
+WHEN the user submits information:
+
+    JAVASCRIPT receives the form data
+
+    VALIDATE the information
+
+    SEND request through Firebase SDK
+
+    FIREBASE AUTHENTICATION:
+        Create account
+        Verify account
+        Login user
+        Reset password
+
+    FIREBASE REALTIME DATABASE:
+        Store user information
+        Retrieve user information
+
+    FIREBASE returns a response
+
+    JAVASCRIPT receives the response
+
+    IF response is successful THEN
+        UPDATE the webpage
+        DISPLAY success message
+        REDIRECT user to the correct dashboard
+
+    ELSE
+        DISPLAY an error message
+    END IF
+
+
+************6. Dashboard***********
+
+IF Firebase Authentication confirms successful login THEN
+
+    RETRIEVE user's account type from Firebase
+
+    IF account type = "Learner" THEN
+        DISPLAY Learner Dashboard
+
+    ELSE IF account type = "Facilitator" THEN
+        DISPLAY Facilitator Dashboard
+    END IF
+
+END IF
+
+END
+
