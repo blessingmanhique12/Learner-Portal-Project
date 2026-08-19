@@ -1,0 +1,544 @@
+Facilitator Wireframe and Pseudocode
+
+Wireframe: 
+https://www.figma.com/site/iOj97NGIVa9QHDkWPazSdc/Facilitator-Dashboard?node-id=0-1&t=E0Gi3CEU9Zy12RKC-1
+
+Pseudocode:
+Start 
+
+FUNCTION startDashboard():
+
+DISPLAY facilitator dashboard
+
+DISPLAY statistics
+
+DISPLAY learner progress
+
+DISPLAY task overview
+
+DISPLAY upcoming assessments
+
+DISPLAY upcoming support sessions
+
+DISPLAY recent submissions
+
+DISPLAY notifications
+
+ADD event listeners
+
+2. Create Sample Learner Data
+
+learners = [ ]
+
+3. Calculate Learner Progress
+
+FUNCTION calculateProgress(learner){
+
+totalTasks = learner.totalTasks
+
+completedTasks = learner.completedTasks
+
+IF totalTasks == 0:
+
+    RETURN 0
+
+progress =
+    (completedTasks / totalTasks) * 100
+
+RETURN ROUND(progress)
+}
+
+4. Calculate Overall Learner Progress
+
+FUNCTION calculateAverageProgress(){
+
+totalProgress = 0
+
+FOR EACH learner IN learners:
+
+    progress = calculateProgress(learner)
+
+    totalProgress = totalProgress + progress
+
+averageProgress = totalProgress / learners.length 
+
+RETURN ROUND(averageProgress)
+}
+
+5. Categorise Learner Progress
+
+FUNCTION getProgressStatus(progress){
+
+IF progress >= 70:
+
+    RETURN "On Track"
+
+ELSE IF progress >= 50:
+
+    RETURN "At Risk"
+
+ELSE:
+
+    RETURN "Needs Attention"
+}
+
+6. Count Learners by Progress Status
+
+FUNCTION countProgressStatuses(){
+
+onTrack = 0
+
+atRisk = 0
+
+needsAttention = 0
+
+FOR EACH learner IN learners:
+
+    progress =
+        calculateProgress(learner)
+
+    status = getProgressStatus(progress)
+
+    IF status == "On Track":
+
+        onTrack = onTrack + 1
+
+    ELSE IF status == "At Risk":
+
+        atRisk = atRisk + 1
+
+    ELSE:
+
+        needsAttention =
+            needsAttention + 1
+
+RETURN {
+    onTrack,
+    atRisk,
+    needsAttention
+}
+
+7. Create Task Data
+
+tasks = [ ]
+
+8. Calculate Task Statistics
+
+FUNCTION calculateTaskStatistics(){
+
+totalTasks = tasks.length
+
+completedTasks = 0
+
+outstandingTasks = 0
+
+FOR EACH task IN tasks:
+
+    IF task.completed == true:
+
+        completedTasks = completedTasks + 1
+
+    ELSE:
+
+        outstandingTasks = outstandingTasks + 1
+
+RETURN {
+    totalTasks,
+    completedTasks,
+    outstandingTasks
+}
+}
+
+
+9. Create Assessment Data
+
+assessments = [ ]
+
+10. Display Upcoming Assessments
+
+FUNCTION displayAssessments(){
+
+assessmentContainer = GetElementbyid "upcoming-assessments"
+
+CLEAR assessmentContainer
+
+FOR EACH assessment IN assessments:
+
+    CREATE assessment card
+
+    ADD assessment.title
+
+    ADD assessment.type
+
+    ADD assessment.dueDate
+
+    ADD assessment.status
+}
+
+11. Create Support Session Data
+
+supportSessions = [ ]
+
+12. Display Support Sessions
+
+FUNCTION displaySupportSessions(){
+
+container = GetElementBYID "support-sessions"
+
+CLEAR container
+
+FOR EACH session IN supportSessions:
+
+    CREATE session card
+
+    ADD session.learner
+
+    ADD session.date
+
+    ADD session.time
+
+    ADD session.status
+}
+
+13. Create Submission Data
+
+submissions = [ ]
+
+14. Display Recent Submissions
+
+FUNCTION displaySubmissions(){
+
+container = GetElementBYID"recent-submissions"
+
+CLEAR container
+
+FOR EACH submission IN submissions:
+
+    CREATE table row
+
+    ADD learner name
+
+    ADD assessment name
+
+    ADD submission date
+
+    ADD status
+
+    ADD grade
+}
+
+15. Create Notification Data
+
+notifications = [ ]
+
+18. Display Notifications
+
+FUNCTION displayNotifications(){
+
+container = GetElementBYID "notifications"
+
+CLEAR container
+
+FOR EACH notification IN notifications:
+
+    CREATE notification item
+
+    ADD notification.message
+
+    ADD notification.time
+
+    ADD item TO container
+}
+
+
+16. View All Learners
+
+FUNCTION viewAllLearners(){
+
+WHEN user clicks
+"View Full Progress Report":
+
+    OPEN learners page
+
+    DISPLAY all learners
+
+    FOR EACH learner:
+
+        progress = calculateProgress(learner)
+
+        status = getProgressStatus(progress)
+
+        DISPLAY:
+
+            learner.name
+            learner.totalTasks
+            learner.completedTasks
+            progress
+            status
+}
+
+17. Quick Action: Add Task
+
+FUNCTION addTask(){
+
+WHEN user clicks
+"Add Task":
+
+    OPEN task form
+
+    GET task title
+
+    GET due date
+
+    GET assigned learner
+
+    IF title is empty:
+
+        DISPLAY "Task title is required"
+
+        RETURN
+
+    CREATE new task
+
+    ADD new task TO tasks
+
+    DISPLAY "Task added successfully"
+
+    updateStatistics()
+}
+
+18. Quick Action: Upload Resource
+
+FUNCTION uploadResource(){
+
+WHEN user clicks
+"Upload Resource":
+
+    OPEN resource form
+
+    GET title
+
+    GET resource type
+
+    GET URL
+
+    GET category
+
+    IF title is empty:
+
+        DISPLAY "Title is required"
+
+        RETURN
+
+    CREATE resource
+
+    ADD resource TO resources
+
+    DISPLAY "Resource uploaded successfully"
+}
+
+19. Quick Action: Upload Assessment
+
+FUNCTION uploadAssessment(){
+
+WHEN user clicks
+"Upload Assessment":
+
+    OPEN assessment form
+
+    GET title
+
+    GET assessment type
+
+    GET due date
+
+    IF title is empty:
+
+        DISPLAY "Assessment title is required"
+
+        RETURN
+
+    CREATE assessment
+
+    ADD assessment TO assessments
+
+    DISPLAY "Assessment uploaded successfully"
+
+    displayAssessments()
+updateStatistics()
+}
+
+20. Quick Action: Book Support Session
+
+FUNCTION bookSupportSession(){
+
+WHEN user clicks
+"Book Session":
+
+    OPEN support session form
+
+    GET learner
+
+    GET date
+
+    GET time
+
+    GET topic
+
+    IF learner is empty
+    OR date is empty
+    OR time is empty:
+
+        DISPLAY "Please complete all required fields"
+
+        RETURN
+
+    CREATE support session
+
+    ADD session TO supportSessions
+
+    DISPLAY "Support session booked successfully"
+
+    displaySupportSessions()
+
+    updateStatistics()
+}
+
+21. Quick Action: Message Learners
+
+FUNCTION messageLearners(){
+
+WHEN user clicks
+"Message Learners":
+
+    OPEN messages page
+
+    DISPLAY learner list
+
+    ALLOW facilitator
+    TO select learner
+
+    OPEN message box
+
+    GET message
+
+    IF message is empty:
+
+        DISPLAY "Please enter a message"
+
+        RETURN
+
+    DISPLAY "Message sent successfully"
+}
+
+22. Sidebar Navigation
+
+FUNCTION setupNavigation(){
+
+WHEN Dashboard is clicked:
+
+    SHOW dashboard
+
+
+WHEN Tasks is clicked:
+
+    OPEN tasks page
+
+
+WHEN Resources is clicked:
+
+    OPEN resources page
+
+
+WHEN Assessments is clicked:
+
+    OPEN assessments page
+
+
+WHEN Submissions is clicked:
+
+    OPEN submissions page
+
+
+WHEN Support Sessions is clicked:
+
+    OPEN support sessions page
+
+
+WHEN Learners is clicked:
+
+    OPEN learners page
+
+
+WHEN Messages is clicked:
+
+    OPEN messages page
+
+
+WHEN Reports is clicked:
+
+    OPEN reports page
+
+
+WHEN Calendar is clicked:
+
+    OPEN calendar page
+
+
+WHEN Settings is clicked:
+
+    OPEN settings page
+}
+
+23. Date Filter
+
+FUNCTION filterByDate(){
+
+WHEN facilitator changes date:
+
+    GET selected start date
+
+    GET selected end date
+
+    FILTER tasks
+
+    FILTER assessments
+
+    FILTER support sessions
+
+    DISPLAY information
+    for selected date range
+}
+
+24. Initialise Dashboard
+
+FUNCTION initialiseDashboard():
+
+startDashboard()
+
+updateStatistics()
+
+displayLearnerProgress()
+
+displayAssessments()
+
+displaySupportSessions()
+
+displaySubmissions()
+
+displayNotifications()
+
+setupNavigation()
+
+ADD event listeners
+
+DISPLAY dashboard
+
+25. Main Program
+
+WHEN page loads:
+
+initialiseDashboard()
+
+END PROGRAM
+
