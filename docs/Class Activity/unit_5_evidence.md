@@ -3,7 +3,7 @@
 | Feature | Classification | Justification |
 |---|---|---|
 | Registration | Both | The client displays the registration form and collects user input; the server (or cloud service like Firebase Auth) creates the account and securely stores the credentials. |
-| Login | Both | The client submits the entered credentials via the UI; the server verifies them against stored (hashed) credentials before granting access. |
+| Login | Both | The client submits the entered credentials via the UI; the server verifies them against stored credentials before granting access. |
 | Form validation | Both | The client performs instant validation (empty fields, correct format) for a fast user experience; the server re-validates the same data because client-side checks can be bypassed or manipulated. |
 | Displaying the dashboard | Client Side | Rendering the dashboard layout and UI elements happens in the browser/app on the user's device. |
 | Creating a learning task | Both | The client collects task details through a form; the server processes the request and saves the new task to the database. |

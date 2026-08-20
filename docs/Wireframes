@@ -1,7 +1,4 @@
-
-
-
-*****************************Pseudocode for login page*************************
+****************************Pseudocode for login page*************************
 ****The link for wireframe https://miro.com/welcomeonboard/aG8rS1U1WFZUc0ZMTFRReWlyVXB2cEhZSU1CdkFLall3K1ZRQWw4MXo0SStSc2t3OVpzUUVENzJMYlRzaEgyZncvcktXZ0gwWkVUeVRJOFowYWpxSVNrVmxScnc1a2FRNkdpR3EwMUlsd3YzVEFkMmFrVDFzUXJXcjVCM0VpUUJ0R2lncW1vRmFBVnlLcVJzTmdFdlNRPT0hdjE=?share_link_id=762927494798**********
 
 *******1. Login Page********
@@ -224,3 +221,207 @@ END IF
 
 END
 
+Diketso
+Facilitator Wireframe and Pseudocode
+
+Wireframe: 
+https://www.figma.com/site/iOj97NGIVa9QHDkWPazSdc/Facilitator-Dashboard?node-id=0-1&t=E0Gi3CEU9Zy12RKC-1
+
+Pseudocode:
+START
+
+Create sample data for:
+    Learners
+    Tasks
+    Assessments
+    Support Sessions
+    Submissions
+
+FUNCTION displayDashboard():
+
+    Display total number of learners
+
+    Display completed and outstanding tasks
+
+    Calculate and display learner progress
+
+    Display upcoming assessments
+
+    Display upcoming support sessions
+
+    Display recent submissions
+
+    Display notifications
+
+
+FUNCTION calculateProgress():
+
+    FOR EACH learner:
+
+        Calculate:
+            completed tasks / total tasks × 100
+
+        IF progress >= 70:
+            Status = "On Track"
+
+        ELSE IF progress >= 50:
+            Status = "At Risk"
+
+        ELSE:
+            Status = "Needs Attention"
+
+    Display learner progress
+
+
+FUNCTION addTask():
+
+    Get task title
+    Get due date
+    Get assigned learner
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add task to tasks list
+        Refresh dashboard
+
+
+FUNCTION uploadAssessment():
+
+    Get assessment title
+    Get assessment type
+    Get due date
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add assessment to assessments list
+        Refresh dashboard
+
+
+FUNCTION bookSupportSession():
+
+    Get learner
+    Get date
+    Get time
+    Get topic
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add session to support sessions list
+        Refresh dashboard
+
+
+WHEN page loads:
+
+    displayDashboard()
+
+END
+
+Blessing
+Miro link: https://miro.com/app/live-embed/uXjVHxeuwIM=/?embedMode=view_only_without_ui&moveToViewport=14995%2C323%2C14943%2C7462&embedId=272620104619
+
+Pseudocode for the wireframe of the Learners Landing Page:
+# SkillsTrack Landing Page 
+
+// This is the main page a learner sees after logging in
+
+START PAGE
+
+// TOP OF PAGE - HEADER
+SHOW logo
+SHOW navigation menu with links: Home, My Goals, Tasks, Support, Progress
+  SHOW logout button
+  
+  
+  // LEARNER INFORMATION
+  DISPLAY learner's name
+  DISPLAY programme name
+  
+  
+  // PROGRESS BAR
+  GET learner's overall progress percentage
+  SHOW progress bar (example: 60% complete)
+  DISPLAY text: "60% complete"
+  
+  
+  // FOUR SUMMARY BOXES IN A ROW
+  
+  Box 1:
+    SHOW "Goals"
+    COUNT total goals
+    DISPLAY number (example: 12)
+  
+  Box 2:
+    SHOW "Outstanding Tasks"
+    COUNT tasks not yet done
+    DISPLAY number (example: 7)
+  
+  Box 3:
+    SHOW "Overdue Tasks"
+    COUNT tasks past due date
+    DISPLAY number in red (example: 2)
+  
+  Box 4:
+    SHOW "Support Bookings"
+    COUNT upcoming sessions
+    DISPLAY number (example: 3)
+  
+  
+  // MAIN CONTENT AREA (4 SECTIONS)
+  
+  Section 1 - My Goals (top left):
+    SHOW heading "My Goals"
+    LIST all goals:
+      - Goal 1
+      - Goal 2
+      - Goal 3
+      - Goal 4
+    SHOW button "Add Goal"
+  
+  
+  Section 2 - My Support Bookings (top right):
+    SHOW heading "My Support Bookings"
+    FOR EACH upcoming booking:
+      DISPLAY date
+      DISPLAY time
+      DISPLAY mentor name
+      DISPLAY topic
+    SHOW button "Book New Session"
+  
+  
+  Section 3 - Progress Quiz (bottom left):
+    SHOW heading "Progress Quiz"
+    DISPLAY quiz title
+    DISPLAY quiz description
+    SHOW small progress bar (how many questions done)
+    DISPLAY "5 of 10 questions complete"
+    SHOW button "Start Quiz"
+  
+  
+  Section 4 - My Tasks (bottom right):
+    SHOW heading "My Tasks"
+    LIST all tasks:
+      - Checkbox + Task 1 + due date
+      - Checkbox + Task 2 + due date
+      - Checkbox + Task 3 + due date
+      - Checkbox + Task 4 + due date
+      - Checkbox + Task 5 + due date
+  
+  
+  // BOTTOM OF PAGE - FOOTER
+  SHOW links: Help Center, Terms, Privacy
+  SHOW contact email and phone
+  SHOW copyright: "© 2026 SkillsTrack"
+
+END PAGE
