@@ -1,3 +1,108 @@
+Facilitator Wireframe and Pseudocode
+
+Wireframe: 
+https://www.figma.com/site/iOj97NGIVa9QHDkWPazSdc/Facilitator-Dashboard?node-id=0-1&t=E0Gi3CEU9Zy12RKC-1
+
+Pseudocode:
+START
+
+Create sample data for:
+    Learners
+    Tasks
+    Assessments
+    Support Sessions
+    Submissions
+
+FUNCTION displayDashboard():
+
+    Display total number of learners
+
+    Display completed and outstanding tasks
+
+    Calculate and display learner progress
+
+    Display upcoming assessments
+
+    Display upcoming support sessions
+
+    Display recent submissions
+
+    Display notifications
+
+
+FUNCTION calculateProgress():
+
+    FOR EACH learner:
+
+        Calculate:
+            completed tasks / total tasks × 100
+
+        IF progress >= 70:
+            Status = "On Track"
+
+        ELSE IF progress >= 50:
+            Status = "At Risk"
+
+        ELSE:
+            Status = "Needs Attention"
+
+    Display learner progress
+
+
+FUNCTION addTask():
+
+    Get task title
+    Get due date
+    Get assigned learner
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add task to tasks list
+        Refresh dashboard
+
+
+FUNCTION uploadAssessment():
+
+    Get assessment title
+    Get assessment type
+    Get due date
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add assessment to assessments list
+        Refresh dashboard
+
+
+FUNCTION bookSupportSession():
+
+    Get learner
+    Get date
+    Get time
+    Get topic
+
+    IF required information is missing:
+
+        Display error message
+
+    ELSE:
+
+        Add session to support sessions list
+        Refresh dashboard
+
+
+WHEN page loads:
+
+    displayDashboard()
+
+END
 Miro link: https://miro.com/app/live-embed/uXjVHxeuwIM=/?embedMode=view_only_without_ui&moveToViewport=14995%2C323%2C14943%2C7462&embedId=272620104619
 
 Pseudocode for the wireframe of the Learners Landing Page:
