@@ -7,90 +7,293 @@ Pseudocode for the wireframe of the Learners Landing Page:
 
 START PAGE
 
-// TOP OF PAGE - HEADER
-SHOW logo
-SHOW navigation menu with links: Home, My Goals, Tasks, Support, Progress
-  SHOW logout button
-  
-  
-  // LEARNER INFORMATION
-  DISPLAY learner's name
-  DISPLAY programme name
-  
-  
-  // PROGRESS BAR
-  GET learner's overall progress percentage
-  SHOW progress bar (example: 60% complete)
-  DISPLAY text: "60% complete"
-  
-  
-  // FOUR SUMMARY BOXES IN A ROW
-  
-  Box 1:
-    SHOW "Goals"
-    COUNT total goals
-    DISPLAY number (example: 12)
-  
-  Box 2:
-    SHOW "Outstanding Tasks"
-    COUNT tasks not yet done
-    DISPLAY number (example: 7)
-  
-  Box 3:
-    SHOW "Overdue Tasks"
-    COUNT tasks past due date
-    DISPLAY number in red (example: 2)
-  
-  Box 4:
-    SHOW "Support Bookings"
-    COUNT upcoming sessions
-    DISPLAY number (example: 3)
-  
-  
-  // MAIN CONTENT AREA (4 SECTIONS)
-  
-  Section 1 - My Goals (top left):
-    SHOW heading "My Goals"
-    LIST all goals:
-      - Goal 1
-      - Goal 2
-      - Goal 3
-      - Goal 4
-    SHOW button "Add Goal"
-  
-  
-  Section 2 - My Support Bookings (top right):
-    SHOW heading "My Support Bookings"
-    FOR EACH upcoming booking:
-      DISPLAY date
-      DISPLAY time
-      DISPLAY mentor name
-      DISPLAY topic
-    SHOW button "Book New Session"
-  
-  
-  Section 3 - Progress Quiz (bottom left):
-    SHOW heading "Progress Quiz"
-    DISPLAY quiz title
-    DISPLAY quiz description
-    SHOW small progress bar (how many questions done)
-    DISPLAY "5 of 10 questions complete"
-    SHOW button "Start Quiz"
-  
-  
-  Section 4 - My Tasks (bottom right):
-    SHOW heading "My Tasks"
-    LIST all tasks:
-      - Checkbox + Task 1 + due date
-      - Checkbox + Task 2 + due date
-      - Checkbox + Task 3 + due date
-      - Checkbox + Task 4 + due date
-      - Checkbox + Task 5 + due date
-  
-  
-  // BOTTOM OF PAGE - FOOTER
-  SHOW links: Help Center, Terms, Privacy
-  SHOW contact email and phone
-  SHOW copyright: "© 2026 SkillsTrack"
+// 1. AUTHENTICATION
 
-END PAGE
+CHECK if the learner is authenticated
+
+IF learner is NOT authenticated THEN
+    REDIRECT learner to Login Page
+ELSE
+    GET authenticated learner ID
+    LOAD learner information
+    LOAD learner's goals
+    LOAD learner's tasks
+    LOAD learner's support bookings
+END IF
+
+
+// 2. HEADER
+
+SHOW SkillsTrack logo
+
+SHOW navigation menu:
+    Home
+    My Goals
+    Tasks
+    Support
+    Progress
+
+SHOW Logout button
+
+WHEN Logout button is clicked:
+    SIGN OUT learner
+    REDIRECT learner to Login Page
+END WHEN
+
+
+// 3. LEARNER INFORMATION
+
+GET learner information using authenticated learner ID
+
+DISPLAY learner's name
+DISPLAY learner's programme name
+
+
+// 4. LOAD TASKS
+
+GET all tasks belonging to the authenticated learner
+
+IF no tasks are available THEN
+    DISPLAY "No tasks available"
+    SET totalTasks = 0
+    SET completedTasks = 0
+    SET outstandingTasks = 0
+    SET overdueTasks = 0
+ELSE
+    COUNT all learner tasks
+    STORE total number in totalTasks
+
+    COUNT tasks where completed = true
+    STORE number in completedTasks
+
+    COUNT tasks where completed = false
+    STORE number in outstandingTasks
+END IF
+
+
+// 5. CALCULATE PROGRESS
+
+IF totalTasks > 0 THEN
+    progressPercentage = (completedTasks / totalTasks) * 100
+ELSE
+    progressPercentage = 0
+END IF
+
+ROUND progressPercentage to a whole number
+
+DISPLAY progress bar using progressPercentage
+
+DISPLAY progressPercentage + "% complete"
+
+
+// 6. CALCULATE OVERDUE TASKS
+
+SET overdueTasks = 0
+
+GET today's date
+
+FOR EACH task:
+
+    IF task.completed = false AND task.dueDate is before today's date THEN
+        overdueTasks = overdueTasks + 1
+    END IF
+
+END FOR
+
+DISPLAY overdueTasks
+
+
+// 7. DASHBOARD SUMMARY BOXES
+
+SHOW Box 1:
+    DISPLAY "Goals"
+    COUNT total learner goals
+    DISPLAY number of goals
+
+SHOW Box 2:
+    DISPLAY "Outstanding Tasks"
+    DISPLAY outstandingTasks
+
+SHOW Box 3:
+    DISPLAY "Overdue Tasks"
+    DISPLAY overdueTasks
+
+SHOW Box 4:
+    DISPLAY "Support Bookings"
+    COUNT upcoming support sessions
+    DISPLAY number of upcoming sessions
+
+
+// 8. MY GOALS
+
+SHOW heading "My Goals"
+
+FOR EACH learner goal:
+    DISPLAY goal title
+END FOR
+
+SHOW "Add Goal" button
+
+WHEN "Add Goal" button is clicked:
+    OPEN goal form
+    GET goal information
+    VALIDATE goal information
+
+    IF information is valid THEN
+        SAVE new goal to Firebase
+        DISPLAY success message
+        REFRESH goals
+    ELSE
+        DISPLAY validation error
+    END IF
+END WHEN
+
+
+// 9. MY SUPPORT BOOKINGS
+
+SHOW heading "My Support Bookings"
+
+FOR EACH upcoming booking:
+    DISPLAY booking date
+    DISPLAY booking time
+    DISPLAY mentor name
+    DISPLAY topic
+END FOR
+
+SHOW "Book New Session" button
+
+WHEN "Book New Session" button is clicked:
+    OPEN support booking form
+    GET booking information
+    VALIDATE booking information
+
+    IF information is valid THEN
+        SAVE booking to Firebase
+        DISPLAY success message
+        REFRESH support bookings
+    ELSE
+        DISPLAY validation error
+    END IF
+END WHEN
+
+
+// 10. PROGRESS QUIZ
+
+SHOW heading "Progress Quiz"
+
+DISPLAY quiz title
+DISPLAY quiz description
+DISPLAY quiz progress
+
+SHOW "Start Quiz" button
+
+WHEN "Start Quiz" button is clicked:
+    START quiz
+    TRACK questions completed
+    UPDATE quiz progress
+    CALCULATE quiz score
+    SAVE score to Firebase
+END WHEN
+
+
+// 11. MY TASKS
+
+SHOW heading "My Tasks"
+
+IF no tasks are available THEN
+    DISPLAY "No tasks available"
+ELSE
+
+    FOR EACH task:
+
+        CREATE task row
+
+        CREATE checkbox
+        DISPLAY task title
+        DISPLAY task due date
+
+        IF task.completed = true THEN
+            SET checkbox to checked
+            DISPLAY task as completed
+        ELSE
+            SET checkbox to unchecked
+        END IF
+
+    END FOR
+
+END IF
+
+
+// 12. UPDATE TASK STATUS USING CHECKBOX
+
+WHEN learner clicks a task checkbox:
+
+    GET selected task ID
+
+    IF checkbox is checked THEN
+        SET selected task.completed = true
+    ELSE
+        SET selected task.completed = false
+    END IF
+
+    UPDATE selected task in Firebase
+
+    DISPLAY updated task status
+
+    // Recalculate dashboard information
+
+    GET all learner tasks again
+
+    COUNT total tasks
+    COUNT completed tasks
+    COUNT outstanding tasks
+
+    IF totalTasks > 0 THEN
+        progressPercentage = (completedTasks / totalTasks) * 100
+    ELSE
+        progressPercentage = 0
+    END IF
+
+    RECALCULATE overdue tasks
+
+    UPDATE progress bar
+    UPDATE progress percentage
+    UPDATE outstanding task count
+    UPDATE overdue task count
+
+END WHEN
+
+
+// 13. DELETE TASK
+
+WHEN learner selects Delete Task:
+
+    SHOW confirmation dialog:
+        "Are you sure you want to delete this task?"
+
+    IF learner confirms THEN
+        DELETE selected task from Firebase
+        REMOVE task from the page
+
+        RECALCULATE task totals
+        RECALCULATE progress
+        UPDATE dashboard
+    ELSE
+        CANCEL deletion
+    END IF
+
+END WHEN
+
+
+// 14. FOOTER
+
+SHOW links:
+    Help Center
+    Terms
+    Privacy
+
+SHOW contact email
+SHOW contact phone
+
+SHOW copyright:
+    "© 2026 SkillsTrack"
