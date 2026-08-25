@@ -1,10 +1,8 @@
-# Blessing
+## Blessing
 
 ### Added
 - User Stories
 - Wireframes completed: landing page, learner dashboard, support request form
-- 
-# CHANGELOG
 
 All notable changes and updates to the SkillsTrack Learner Support Portal project are documented here.
 
