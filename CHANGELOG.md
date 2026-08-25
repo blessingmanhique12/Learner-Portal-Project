@@ -33,7 +33,6 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 - Improved the Landing Page pseudocode to include system logic and user interactions.
 - Added logic for updating task status through the checkbox.
 - Added logic for recalculating learner progress when a task is completed or uncompleted.
-- 
 * Edited the User Stories to include two points of view: **Learner** and **Assessor**.
 * Added separate user stories and acceptance criteria to clearly represent the needs and actions of both users.
 
