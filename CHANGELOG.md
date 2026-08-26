@@ -36,3 +36,10 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 * Edited the User Stories to include two points of view: **Learner** and **Assessor**.
 * Added separate user stories and acceptance criteria to clearly represent the needs and actions of both users.
 
+## [0.3.0] - 26 August 2026
+
+### Added
+
+* UI Design for the Learner Landing Page
+ 
+
