@@ -1,26 +1,19 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 # Blessing
 
 ### Added
 - User Stories
 - Wireframes completed: landing page, learner dashboard, support request form
-=======
-=======
+
 # CHANGELOG
 
 All notable changes and updates to the SkillsTrack Learner Support Portal project are documented here.
 
 ## [0.1.0] - 2026-08-19
 
->>>>>>> a1cd141 (docs: update requirements, client brief, user stories, wireframes, pseudocode and changelog)
 ### Added
 
 - User Stories
-<<<<<<< HEAD
-- Wireframes completed: landing page, learner dashboard, support request form
->>>>>>> 731dc7a (Update CHANGELOG file)
-=======
 - Wireframes completed: Landing Page, Learner Dashboard, and Support Request Form
 - Initial Pseudocode
 
@@ -47,4 +40,3 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 
 * Edited the User Stories to include two points of view: **Learner** and **Assessor**.
 * Added separate user stories and acceptance criteria to clearly represent the needs and actions of both users.
->>>>>>> a1cd141 (docs: update requirements, client brief, user stories, wireframes, pseudocode and changelog)
