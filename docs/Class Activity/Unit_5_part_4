@@ -1,0 +1,32 @@
+
+# Registration/Login
+
+1. What action does the user perform?
+The learner opens the SkillsTrack portal and enters their email address and password into the registration or login form. They then click “Register” or “Login.”
+
+2. What does JavaScript do in the browser?
+JavaScript listens for the form submission using an event listener. It collects the email and password entered by the learner and prevents the page from refreshing. JavaScript then prepares the information to be sent to Firebase.
+
+3. What validation occurs?
+Before sending the information, JavaScript checks that the required fields have been completed. It can check that the email address is in a valid format and that the password meets the required rules, such as having a minimum number of characters. If the information is not valid, JavaScript displays an error message on the page and does not send a request to Firebase.
+
+4. What information leaves the browser?
+If the information passes validation, the learner's email address and password are sent securely to Firebase Authentication through the Firebase SDK. During login, Firebase uses these details to identify the learner and verify their account.
+
+5. Which Firebase service receives the request?
+The request is received by Firebase Authentication. This service is responsible for creating new learner accounts and checking login details when an existing learner signs in.
+
+6. What does Firebase do with it?
+For registration, Firebase Authentication creates a new user account and gives the learner a unique User ID (UID). For login, Firebase checks whether the email and password match an existing account. If the details are correct, Firebase authenticates the learner and provides authentication information that can be used to identify them.
+
+7. What response/data is returned?
+Firebase sends a response back to JavaScript. If registration or login is successful, the response contains information about the authenticated user, including their unique UID. If something goes wrong, such as an incorrect password or an email that is already registered, Firebase returns an error.
+
+8. How does JavaScript process the result?
+JavaScript receives the response from Firebase and checks whether the operation was successful. If the learner has successfully logged in, JavaScript can use their UID to identify them and load the correct SkillsTrack information. If there is an error, JavaScript processes the error and prepares an appropriate message for the learner.
+
+9. How is the interface updated?
+JavaScript updates the DOM based on the result. After a successful login, the login form can be hidden and the learner can be taken to or shown the SkillsTrack dashboard. The dashboard can then display the learner's tasks, support sessions, or progress. If login fails, JavaScript displays an error message on the login page.
+
+10. What should happen if the request fails?
+If registration or login fails, JavaScript should show a clear and user-friendly message, such as “The email or password is incorrect” or “This email is already registered.” The learner should be able to correct their details and try again. The application should not display the learner's dashboard until Firebase has successfully authenticated them.
