@@ -3,35 +3,13 @@ Facilitator Wireframe and Pseudocode
 Wireframe: 
 https://www.figma.com/site/iOj97NGIVa9QHDkWPazSdc/Facilitator-Dashboard?node-id=0-1&t=E0Gi3CEU9Zy12RKC-1
 
+POV FACILITATOR USER-STORY: https://www.figma.com/design/xAKNJudFfnapvdjdV0Kpc3/POV--Facilitator-User-story?node-id=0-1&p=f&t=nb2VBQ2J7j5uCtSv-0
+
 Pseudocode:
 START
 
-Create sample data for:
-    Learners
-    Tasks
-    Assessments
-    Support Sessions
-    Submissions
-
-FUNCTION displayDashboard():
-
-    Display total number of learners
-
-    Display completed and outstanding tasks
-
-    Calculate and display learner progress
-
-    Display upcoming assessments
-
-    Display upcoming support sessions
-
-    Display recent submissions
-
-    Display notifications
-
-
 FUNCTION calculateProgress():
-
+GET learner.uid
     FOR EACH learner:
 
         Calculate:
@@ -51,9 +29,9 @@ FUNCTION calculateProgress():
 
 FUNCTION addTask():
 
-    Get task title
-    Get due date
-    Get assigned learner
+    INPUT task title
+    INPUT due date
+    INPUT assigned learner
 
     IF required information is missing:
 
@@ -61,44 +39,62 @@ FUNCTION addTask():
 
     ELSE:
 
+        Display "Task added successfully"
         Add task to tasks list
         Refresh dashboard
 
 
-FUNCTION uploadAssessment():
+FUNCTION uploadResources():
 
-    Get assessment title
-    Get assessment type
-    Get due date
+    INPUT resource title
+    INPUT resource type
+    INPUT due date
 
     IF required information is missing:
 
-        Display error message
+        Display "Input the required information!"
 
     ELSE:
 
-        Add assessment to assessments list
+       Display "Resource added successfully"
+        Add resource to resources list
         Refresh dashboard
 
 
 FUNCTION bookSupportSession():
 
-    Get learner
-    Get date
-    Get time
-    Get topic
+    Get learner.uid
+    INPUT date
+    INPUT time
+    INPUT topic
 
     IF required information is missing:
 
-        Display error message
+        Display "Input the required information"
 
     ELSE:
 
+        Display "Support Session successfully booked"
         Add session to support sessions list
         Refresh dashboard
 
 
 WHEN page loads:
+FUNCTION displayDashboard():
+
+    Display total number of learners
+
+    Display completed and outstanding tasks
+
+    Calculate and display learner progress
+
+    Display upcoming assessments
+
+    Display upcoming support sessions
+
+    Display recent submissions
+
+    Display notifications
 
     displayDashboard()
 
