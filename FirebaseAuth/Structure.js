@@ -1,7 +1,7 @@
 users/{uid}
   displayName: string
   email: string
-  role: "learner" | "assessor"
+  role: "learner" | "facilitator"
   createdAt: timestamp
 
 tasks/{taskId}
