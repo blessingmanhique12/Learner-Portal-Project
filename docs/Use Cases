@@ -1,0 +1,167 @@
+**Learner Use Cases**
+Use Case 1: Register Account
+Actor: Learner
+Description:
+The learner creates an account by entering their name, email address and password.
+Main steps:
+Learner opens the registration page.
+Learner enters their details.
+System validates the information.
+System creates the learner account.
+System directs the learner to the login page.
+Expected result:
+A learner account is created successfully.
+
+Use case 2: Login
+Actor: Learner / Facilitator
+Description:
+The user enters their email and password to access the system.
+Main steps:
+User enters email.
+User enters password.
+System checks the login details.
+System identifies the user's role.
+System displays the correct dashboard.
+Expected result:
+The user accesses the correct dashboard.
+
+Use Case 3: View Dashboard
+Actor: Learner
+Description:
+The learner views their learning information from one dashboard.
+The dashboard displays:
+Tasks
+Completed tasks
+Outstanding tasks
+Progress
+Assessments
+Upcoming deadlines
+Resources
+Support sessions
+Expected result:
+The learner gets an overview of their current learning activities.
+
+Use Case 4: Manage Tasks
+Actor: Learner
+Description:
+The learner views assigned tasks and updates their task status.
+Main steps:
+Learner opens Tasks.
+System displays available tasks.
+Learner selects a task.
+Learner completes the task.
+Learner marks the task as completed.
+System updates the task status.
+Expected result:
+The task changes from incomplete to completed.
+
+Use Case 5: View Learning Resources
+Actor: Learner
+Description:
+The learner accesses resources provided by the facilitator.
+Main steps:
+Learner opens Resources.
+System displays available resources.
+Learner selects a resource.
+System opens the resource.
+Expected result:
+The learner accesses the selected study material.
+
+Use Case 6: Complete Assessment
+Actor: Learner
+Description:
+The learner completes and submits an assessment.
+Main steps:
+Learner opens Assessments.
+Learner selects an assessment.
+Learner completes the assessment.
+Learner submits the assessment.
+System records the submission.
+Expected result:
+The assessment is recorded as submitted.
+
+Use Case 7: Book Support Session
+Actor: Learner
+Description:
+The learner requests a support session with a facilitator.
+Main steps:
+Learner opens Support Sessions.
+Learner selects a facilitator.
+Learner selects a preferred date and time.
+Learner enters the topic.
+Learner adds notes if needed.
+Learner submits the booking.
+System records the booking as Pending.
+Expected result:
+The facilitator receives the support-session booking request.
+
+**Facilitator Use Cases**
+Use case 8: View Learner Progress
+Actor: Facilitator
+Description:
+The facilitator views learner progress from the dashboard.
+Main steps:
+Facilitator logs in.
+Facilitator opens the dashboard.
+System displays learner progress.
+Facilitator selects a learner.
+System displays the learner's tasks, assessments and scores.
+Expected result:
+The facilitator gets an overview of the learner's progress.
+
+Use Case 9: Create Task
+Actor: Facilitator
+Description:
+The facilitator creates a task and assigns it to a learner.
+Main steps:
+Facilitator selects Add Task.
+Facilitator enters the task title.
+Facilitator selects a category.
+Facilitator sets the due date.
+Facilitator selects the priority.
+Facilitator assigns the task.
+System saves the task.
+Expected result:
+The task appears on the learner's dashboard.
+
+Use Case 10: Upload Assessment
+Actor: Facilitator
+Description:
+The facilitator adds an assessment for learners.
+Main steps:
+Facilitator selects Add Assessment.
+Facilitator enters the assessment details.
+Facilitator selects the assessment type.
+Facilitator sets the due date.
+Facilitator saves the assessment.
+System makes the assessment available to learners.
+Expected result:
+Learners can access the assessment.
+
+Use Case 11: Manage Support Bookings
+Actor: Facilitator
+Description:
+The facilitator reviews and manages learner support-session requests.
+Main steps:
+Facilitator opens Support Sessions.
+System displays pending bookings.
+Facilitator selects a booking.
+Facilitator confirms or rejects the request.
+System updates the booking status.
+Facilitator Can also book a sessionfor a learner that is struggling.
+Expected result:
+The learner sees the updated booking status.
+
+Use Case 12: Manage Resources
+Actor: Facilitator
+Description:
+The facilitator adds learning resources for learners.
+Main steps:
+Facilitator opens Resources.
+Facilitator selects Add Resource.
+Facilitator enters the title and description.
+Facilitator selects the resource type.
+Facilitator adds the resource link.
+Facilitator saves the resource.
+Expected result:
+The resource becomes available to learners.
