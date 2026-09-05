@@ -3,46 +3,67 @@
 
 *******1. Login Page********
 
+START
+
 DISPLAY Login Page
 
 ASK user to enter:
     Email
     Password
 
-DISPLAY "Sign In"
-DISPLAY "Forgot Password?"
-DISPLAY "Sign Up"
+DISPLAY:
+    Sign In
+    Forgot Password?
+    Sign Up
 
 IF user clicks "Sign Up" THEN
     GO TO Registration Page
 END IF
 
 IF user clicks "Forgot Password?" THEN
-    GO TO Forgot/Reset Password Page
+    GO TO Forgot Password Page
 END IF
 
 IF user clicks "Sign In" THEN
 
-    CHECK that Email and Password are not empty
+    GET Email
+    GET Password
 
-    IF Email OR Password is empty THEN
+    IF Email is empty OR Password is empty THEN
+
         DISPLAY "Please enter your email and password"
+
     ELSE
-        SEND Email and Password to Firebase Authentication
 
-        IF login is successful THEN
-            CHECK account type
+        SEND Email and Password
+        TO Firebase Authentication
 
-            IF account type is Learner THEN
+        IF Firebase Authentication is successful THEN
+
+            GET authenticated user's UID
+
+            SEND UID TO Firebase Realtime Database
+
+            RETRIEVE user's account type
+
+            IF account type = "Learner" THEN
                 GO TO Learner Dashboard
-            ELSE IF account type is Facilitator THEN
+
+            ELSE IF account type = "Facilitator" THEN
                 GO TO Facilitator Dashboard
+
+            ELSE
+                DISPLAY "Account type not recognised"
             END IF
 
         ELSE
+
             DISPLAY "Invalid email or password"
+
         END IF
+
     END IF
+
 END IF
 
 *********2. Registration and OTP**********
@@ -50,106 +71,128 @@ END IF
 DISPLAY Registration Page
 
 ASK user to enter:
+
     Email
     Username
     Phone Number
     Account Type
     Password
 
-DISPLAY Account Type:
+DISPLAY:
+
     Learner
     Facilitator
 
 IF user clicks "Create Account" THEN
 
-    VALIDATE all registration information
+    GET all registration information
 
-    IF any required information is missing THEN
+    VALIDATE registration information
+
+    IF any required field is empty THEN
+
         DISPLAY "Please complete all fields"
 
-    ELSE IF password does not meet requirements THEN
+    ELSE IF password is less than 6 characters THEN
+
         DISPLAY "Password must contain at least 6 characters"
 
     ELSE
-        SEND registration information to Firebase
 
-        GENERATE OTP
+        SEND Email and Password
+        TO Firebase Authentication
 
-        DISPLAY OTP Verification section
+        IF account creation is successful THEN
 
-        ASK user to choose:
-            Email OTP
-            Phone OTP
+            RECEIVE Firebase User UID
 
-        SEND OTP to selected method
-    END IF
-END IF
+            BEGIN verification process
 
-ASK user to enter OTP
+            IF Phone OTP is selected THEN
+                SEND OTP to user's phone
+            ELSE IF Email verification is selected THEN
+                SEND verification request/email
+            END IF
 
-IF entered OTP is correct THEN
+            DISPLAY Verification Page
 
-    CREATE and verify Firebase account
+            ASK user to enter verification code
+            OR complete email verification
 
-    SAVE user information to Firebase Realtime Database
+            IF verification is successful THEN
 
-    DISPLAY "Account created successfully"
+                SAVE user information
+                TO Firebase Realtime Database
 
-    RETURN user to Login Page
+                STORE:
+                    UID
+                    Username
+                    Email
+                    Phone Number
+                    Account Type
 
-ELSE
-    DISPLAY "Incorrect OTP"
-    ALLOW user to request another OTP
-END IF
+                DISPLAY "Account created successfully"
 
+                GO TO Login Page
 
-**********3. Forgot / Reset Password************
-
-DISPLAY Forgot/Reset Password Page
-
-ASK user to enter:
-    Account Email
-    Phone Number or verification information
-
-ASK user to select:
-    Email OTP
-    Phone OTP
-
-IF user clicks "Reset Password" THEN
-
-    CHECK whether account exists in Firebase
-
-    IF account exists THEN
-
-        GENERATE OTP
-
-        SEND OTP to selected email or phone
-
-        ASK user to enter OTP
-
-        IF OTP is correct THEN
-
-            ASK user to enter a new password
-
-            VALIDATE new password
-
-            IF password is valid THEN
-                UPDATE password in Firebase Authentication
-
-                DISPLAY "Password reset successfully"
-
-                RETURN user to Login Page
             ELSE
-                DISPLAY "Password does not meet requirements"
+
+                DISPLAY "Incorrect verification code"
+
+                ALLOW user to request another code
+
             END IF
 
         ELSE
-            DISPLAY "Invalid OTP"
+
+            DISPLAY Firebase registration error
+
         END IF
 
-    ELSE
-        DISPLAY "Account not found"
     END IF
+
+END IF
+
+**********3. Forgot / Reset Password************
+
+DISPLAY Forgot Password Page
+
+ASK user to enter:
+
+    Email
+
+IF user clicks "Reset Password" THEN
+
+    VALIDATE Email
+
+    IF Email is empty THEN
+
+        DISPLAY "Please enter your email"
+
+    ELSE
+
+        SEND password reset request
+        TO Firebase Authentication
+
+        IF Firebase accepts the request THEN
+
+            SEND password reset email
+            TO user
+
+            DISPLAY
+            "Password reset instructions have been sent"
+
+            GO TO Login Page
+
+        ELSE
+
+            DISPLAY
+            "Unable to process password reset"
+
+        END IF
+
+    END IF
+
 END IF
 
 ************4. Return to Login***********
