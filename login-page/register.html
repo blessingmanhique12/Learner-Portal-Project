@@ -1,0 +1,83 @@
+<!-- Document root identifies the page language for browsers and assistive technology. -->
+<html lang="en">
+<head>
+  <!-- Character encoding prevents text from displaying incorrectly. -->
+    <meta charset="UTF-8">
+  <!-- Viewport settings keep the form responsive on phones and tablets. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+  <!-- Loads the styles used by the registration page. -->
+    <link rel="stylesheet" href="register.css">
+</head>
+<body>
+  <!-- Main landmark contains the page's registration task. -->
+  <main class="register-page">
+    <!-- Form landmark groups all controls needed to create an account. -->
+    <form id="registerPanel" class="auth-form panel">
+    <!-- Header identifies the brand and purpose of the form. -->
+    <header class="brand-logo">
+            <img src="logoImage.png.png" alt="LearnerHub logo">
+    </header>
+
+    <!-- Account section collects the user's profile and login details. -->
+    <section class="form-section" aria-labelledby="account-details-heading">
+      <h2 id="account-details-heading">Account details</h2>
+        <label for="registerEmail">Email address</label>
+        <input id="registerEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
+
+        <label for="registerUsername">Username</label>
+        <input id="registerUsername" type="text" autocomplete="username" placeholder="Created from email" readonly>
+
+        <label for="registerPhone">Phone number</label>
+        <input id="registerPhone" type="tel" autocomplete="tel" placeholder="+27123456789">
+
+        <label for="registerRole">Account type</label>
+        <select id="registerRole" required>
+          <option value="learner">Learner</option>
+          <option value="facilitator">Facilitator</option>
+        </select>
+
+        <label for="registerProgramme">Programme</label>
+        <input id="registerProgramme" type="text" placeholder="Required for learners">
+
+        <label for="registerPassword">Create password</label>
+        <div class="password-field">
+          <!-- Password input is controlled by the eye button below. -->
+          <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" required>
+          <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" data-toggle-password="registerPassword">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+        </section>
+
+        <!-- Verification section lets the user choose and confirm an OTP method. -->
+        <section class="form-section" aria-labelledby="verification-heading">
+          <h2 id="verification-heading">Verification</h2>
+        <fieldset class="choice-group">
+          <legend>OTP method</legend>
+          <label><input type="radio" name="verificationMethod" value="email" checked> Email OTP</label>
+          <label><input type="radio" name="verificationMethod" value="phone"> Phone OTP</label>
+        </fieldset>
+
+        <button id="sendRegisterOtp" class="secondary-button" type="button">Send OTP</button>
+
+        <label for="registerOtp">Confirm OTP</label>
+        <input id="registerOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required>
+        </section>
+
+        <!-- CAPTCHA is filled by the authentication service when enabled. -->
+        <div id="recaptcha-container"></div>
+        <!-- Action area contains the final account creation command. -->
+        <footer class="form-actions">
+          <button id="registerButton" class="primary-button" type="submit">Create account</button>
+          <a class="back-login-button" href="login.html">Back to login</a>
+        </footer>
+      </form>
+    </main>
+    <!-- Loads the password visibility and form interaction behavior. -->
+      <script src="register.js"></script>
+</body>
+</html>
