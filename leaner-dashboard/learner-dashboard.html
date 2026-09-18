@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Learner Dashboard | LearnerHub</title>
+	<link rel="stylesheet" href="learner-dashboard.css">
+	<script type="module" src="learnerdashboard.js" defer></script>
+</head>
+<body>
+	<main class="dashboard-shell">
+		<header class="dashboard-header">
+			<div>
+				<p class="eyebrow">LearnerHub</p>
+				<h1>Learner dashboard</h1>
+				<p id="learnerWelcome" class="muted">Checking your Firebase session...</p>
+			</div>
+			<button id="logoutButton" type="button">Sign out</button>
+		</header>
+
+		<section class="dashboard-grid" aria-label="Learner tools">
+			<article>
+				<h2>My programme</h2>
+				<p id="programmeValue">Loading...</p>
+			</article>
+			<article>
+				<h2>Progress</h2>
+				<p>Track goals, tasks, support bookings, and learning progress from here.</p>
+			</article>
+			<article>
+				<h2>Support</h2>
+				<p>Book facilitator support and keep your learning evidence organised.</p>
+			</article>
+		</section>
+
+		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
+	</main>
+</body>
+</html>
