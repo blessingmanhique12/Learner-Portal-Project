@@ -1,148 +1,66 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
-import {
-	getAuth,
-	sendPasswordResetEmail
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
-
-const firebaseConfig = {
-	apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E',
-	authDomain: 'ron-learn.firebaseapp.com',
-	projectId: 'ron-learn',
-	storageBucket: 'ron-learn.firebasestorage.app',
-	messagingSenderId: '63585372704',
-	appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45',
-	measurementId: 'G-M7RYTEEEVS'
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-const resetForm = document.getElementById('resetPanel');
-const resetButton = document.getElementById('resetButton');
-const resetMessage = document.getElementById('resetMessage');
-const sendResetOtp = document.getElementById('sendResetOtp');
-const emailInput = document.getElementById('resetEmail');
-const phoneInput = document.getElementById('resetPhone');
-const otpInput = document.getElementById('resetOtp');
+// Finds the password eye button used for the new password field.
 const passwordToggle = document.querySelector('[data-toggle-password]');
 
-let currentOtp = '';
-const resetTimeout = 6500;
-const redirectDelay = 900;
-
-const withTimeout = (promise, label) => Promise.race([
-	promise,
-	new Promise((_, reject) => {
-		window.setTimeout(() => {
-			reject(new Error(`${label} timed out.`));
-		}, resetTimeout);
-	})
-]);
-
-const setMessage = (text, type = '') => {
-	if (!resetMessage) {
-		return;
-	}
-
-	resetMessage.textContent = text;
-	resetMessage.className = type ? `message ${type}` : 'message';
-};
-
-const getSelectedResetFactor = () => {
-	const selectedFactor = document.querySelector('input[name="resetFactor"]:checked');
-	return selectedFactor ? selectedFactor.value : 'email';
-};
-
-const toggleLoading = (isLoading) => {
-	if (resetButton) {
-		resetButton.disabled = isLoading;
-		resetButton.textContent = isLoading ? 'Sending reset link...' : 'Send reset link';
-	}
-
-	if (sendResetOtp) {
-		sendResetOtp.disabled = isLoading;
-	}
-};
-
-const getFriendlyFirebaseError = (error) => {
-	switch (error.code) {
-		case 'auth/invalid-email':
-			return 'Enter a valid email address.';
-		case 'auth/user-not-found':
-			return 'No Firebase account was found for this email.';
-		case 'auth/too-many-requests':
-			return 'Too many reset attempts. Please wait a moment and try again.';
-		default:
-			return error.message || 'Password reset failed. Please try again.';
-	}
-};
-
 if (passwordToggle) {
+	// Locates the input connected to the button through its data attribute.
 	const passwordInput = document.getElementById(passwordToggle.dataset.togglePassword);
 
 	if (passwordInput) {
+		// Toggles password masking without changing the entered value.
 		passwordToggle.addEventListener('click', () => {
+			// Checks whether the password is currently displayed as plain text.
 			const isVisible = passwordInput.type === 'text';
 
+			// Switches between masked and visible password input types.
 			passwordInput.type = isVisible ? 'password' : 'text';
+			// Keeps the button state available to assistive technology.
 			passwordToggle.setAttribute('aria-pressed', String(!isVisible));
+			// Announces the next action through the button label.
 			passwordToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
 		});
 	}
 }
 
-if (sendResetOtp) {
-	sendResetOtp.addEventListener('click', () => {
-		const factor = getSelectedResetFactor();
-		const destination = factor === 'phone' ? phoneInput.value.trim() : emailInput.value.trim();
+// Provides local validation feedback before a password service is connected.
+const resetForm = document.getElementById('resetPanel');
+const resetMessage = document.getElementById('resetMessage');
+const sendResetOtp = document.getElementById('sendResetOtp');
 
-		if (!destination) {
-			setMessage(`Enter your ${factor === 'phone' ? 'phone number' : 'email address'} before sending an OTP.`, 'error');
+if (sendResetOtp && resetMessage) {
+	// Confirms that an email or phone contact is available for the OTP request.
+	sendResetOtp.addEventListener('click', () => {
+		// Reads both possible recovery contacts before requesting an OTP.
+		const email = document.getElementById('resetEmail');
+		const phone = document.getElementById('resetPhone');
+
+		if (!email.value.trim() && !phone.value.trim()) {
+			// Stops the request when no delivery contact has been entered.
+			resetMessage.textContent = 'Enter an email or phone number first.';
+			resetMessage.className = 'message error';
 			return;
 		}
 
-		currentOtp = String(Math.floor(100000 + Math.random() * 900000));
-		otpInput.value = currentOtp;
-		otpInput.focus();
-		setMessage(`Demo OTP sent by ${factor}. Use ${currentOtp} to continue.`, 'success');
+		resetMessage.textContent = 'OTP request is ready to be sent.';
+		// Confirms that the contact check passed locally.
+		resetMessage.className = 'message success';
 	});
 }
 
-if (resetForm) {
-	resetForm.addEventListener('submit', async (event) => {
+if (resetForm && resetMessage) {
+	resetForm.addEventListener('submit', (event) => {
+		// Prevents a reload until a real password reset service is connected.
 		event.preventDefault();
 
-		if (!emailInput.value.trim()) {
-			setMessage('Enter the email address for the account you want to reset.', 'error');
-			emailInput.focus();
+		if (!resetForm.checkValidity()) {
+			// Reports missing or invalid required fields to the user.
+			resetMessage.textContent = 'Complete the required fields before resetting your password.';
+			resetMessage.className = 'message error';
+			resetForm.reportValidity();
 			return;
 		}
 
-		if (!currentOtp) {
-			setMessage('Send the OTP first, then confirm it to continue.', 'error');
-			return;
-		}
-
-		if (otpInput.value.trim() !== currentOtp) {
-			setMessage('The OTP does not match. Send a new code or check the number entered.', 'error');
-			return;
-		}
-
-		toggleLoading(true);
-		setMessage('Sending Firebase password reset email...', '');
-
-		try {
-			await withTimeout(sendPasswordResetEmail(auth, emailInput.value.trim()), 'Password reset');
-			resetForm.reset();
-			currentOtp = '';
-			setMessage('Password reset email sent. Returning to login...', 'success');
-			window.setTimeout(() => {
-				window.location.href = 'login.html';
-			}, redirectDelay);
-		} catch (error) {
-			setMessage(getFriendlyFirebaseError(error), 'error');
-		} finally {
-			toggleLoading(false);
-		}
+		resetMessage.textContent = 'Password reset details are ready to be verified.';
+		// Confirms that the local form checks passed.
+		resetMessage.className = 'message success';
 	});
 }

@@ -1,0 +1,238 @@
+# Requirements
+
+## 1. Functional Requirements
+
+### 1.1 User Authentication
+
+The system must:
+
+* Allow users to register.
+* Allow registered users to sign in.
+* Allow authenticated users to sign out.
+* Maintain an authenticated user state.
+* Provide clear feedback when invalid information is entered.
+
+### 1.2 Dashboard
+
+The system must provide a dashboard that displays:
+
+* Total number of tasks.
+* Number of completed tasks.
+* Number of outstanding tasks.
+* Calculated learner progress.
+
+### 1.3 Task Management
+
+Learners must be able to:
+
+* Create tasks.
+* View tasks.
+* Edit tasks.
+* Mark tasks as completed.
+* Delete tasks.
+
+The system must request confirmation before a task is deleted.
+
+### 1.4 Progress Calculation
+
+The system must calculate and display:
+
+* Completed work.
+* Outstanding work.
+* Overdue work.
+* Overall progress.
+
+The information must be calculated from the learner's task data.
+
+### 1.5 Support Booking
+
+The system must allow learners to:
+
+* Submit a support-session request.
+* Provide the required booking information.
+* Receive validation feedback.
+* Receive appropriate success or error feedback.
+* View their submitted support booking.
+
+### 1.6 Search, Filter and Sort
+
+The system must allow users to search, filter or sort tasks or learning resources.
+
+JavaScript arrays and higher-order functions must be used to process the relevant data.
+
+### 1.7 User Preferences
+
+The system must store a non-sensitive user preference using cookies.
+
+The preference must be able to be:
+
+* Written to the cookie.
+* Read from the cookie.
+* Modified.
+* Removed.
+
+Passwords and other sensitive information must not be stored in cookies.
+
+### 1.8 Print and Redirect
+
+The system must:
+
+* Allow the learner to print a suitable progress summary.
+* Redirect the user when a redirect is appropriate to the application flow.
+
+### 1.9 Mini-Game
+
+The system must include an operable basic JavaScript mini-game.
+
+The game must:
+
+* Be created using an assessor-approved JavaScript framework or library.
+* Record a score or meaningful outcome.
+* Store the result or summary in Firebase.
+
+### 1.10 Animation and Multimedia
+
+The system must include:
+
+* At least one JavaScript timer-based animation.
+* One controlled image, audio or video element.
+
+## 2. Database Requirements
+
+The application must use **Firebase Realtime Database**.
+
+The database must support appropriate data for:
+
+* Users.
+* Learning tasks.
+* Support bookings.
+* Game scores.
+* Learning resources where applicable.
+
+The suggested database structure includes:
+
+* `users/{uid}`
+* `tasks/{taskId}`
+* `bookings/{bookingId}`
+* `scores/{scoreId}`
+* `resources/{resourceId}`
+
+## 3. CRUD and REST API Requirements
+
+The system must demonstrate CRUD operations using the Firebase Realtime Database REST API.
+
+The project must provide evidence of:
+
+* POST
+* GET
+* PUT or PATCH
+* DELETE
+* A final GET or equivalent verification
+
+At least one primary entity, such as learning tasks, must support full CRUD functionality.
+
+## 4. Validation Requirements
+
+The system must perform client-side validation for:
+
+* Names.
+* Email addresses.
+* Passwords.
+* Numeric fields.
+* Required information.
+
+User input must be validated before it is written to Firebase.
+
+## 5. Error Handling Requirements
+
+The application must use appropriate error handling.
+
+The project must demonstrate:
+
+* `try`
+* `catch`
+* `finally`
+* At least one custom thrown error using `throw`
+
+Errors must provide appropriate feedback to the user.
+
+## 6. Object-Oriented Programming Requirements
+
+The application must use ES6 classes and object instances.
+
+The implementation must include:
+
+* Classes.
+* Properties.
+* Methods.
+* At least one relationship, such as inheritance or composition.
+
+## 7. DOM and Event Requirements
+
+The application must use JavaScript to dynamically:
+
+* Create interface elements.
+* Change interface elements or attributes.
+* Remove interface elements or attributes.
+
+The application must use event listeners to respond to user actions.
+
+## 8. Security Requirements
+
+The system must:
+
+* Prevent unrestricted public write access to the database.
+* Ensure users only access data appropriate to their authenticated identity and role.
+* Use Firebase Authentication to handle passwords.
+* Never store passwords in the database.
+* Never store passwords in cookies.
+* Never store passwords in source code.
+* Never commit secrets, private credentials or service-account files to GitHub.
+
+## 9. Development and Version Control Requirements
+
+The project must use Git and GitHub.
+
+The team must have:
+
+* One shared GitHub repository.
+* Feature branches.
+* Meaningful commits.
+* Pull requests.
+* Peer reviews.
+* Merges.
+* Individual contribution history.
+* At least one resolved merge or integration issue.
+
+## 10. Testing Requirements
+
+The project must include evidence of:
+
+* Manual testing.
+* Browser developer tools.
+* Breakpoints where appropriate.
+* Console and stack-trace investigation.
+* Identified problems.
+* Corrections made.
+* Retesting after corrections.
+
+The Month 1 project requirements specifically require evidence of at least three issues and their corrections.
+
+## 11. Continuous Integration Requirements
+
+The GitHub repository must contain a basic GitHub Actions workflow or equivalent automated check, such as:
+
+* Linting.
+* Automated tests.
+
+## 12. Documentation Requirements
+
+The completed project must include appropriate documentation, including:
+
+* README.
+* Test evidence/report.
+* Contribution report.
+* Project documentation.
+* GitHub history.
+* Assessor review evidence.
+* Learner reflection.

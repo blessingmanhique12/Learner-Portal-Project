@@ -1,10 +1,99 @@
-Students must be able to register, sign-in, sign-out and authenticate the input.
-Learners must be able to create, view, edit , complete and delete tasks.
-Learners must be able to book support sessions.
-The Dashboard should have progress calculations.
-Learners should be able to search, filter and sort on tasks.
-Cookie-based preference such as theme, display mode or last selected filter. Passwords and sensitive
-data may not be stored in cookies.
-Learners should be able to play a mini-game with score tracking.
-There should be a printable progress summary. 
-There should be at least one animation driven by JavaScript timers and one controlled multimedia element.
+# 1. Project Title
+
+**SkillsTrack Learner Support Portal**
+
+## 2. Client
+
+**SkillsTrack Training Centre**
+
+SkillsTrack Training Centre supports learners who attend short occupational programmes.
+
+## 3. Project Background
+
+Learners currently record their goals, tasks, support bookings and progress in separate documents and messages. This makes it difficult for assessors to see what work is outstanding, which learners need support and whether learners are making progress.
+
+The centre requires a browser-based Learner Support Portal that brings these activities together in one system.
+
+## 4. Project Purpose
+
+The purpose of the project is to develop a functional Learner Support Portal that allows registered learners to manage their learning tasks, book support sessions, view their progress and access additional learning activities.
+
+The system will use JavaScript for application logic and Firebase as the database.
+
+## 5. Client Objectives
+
+The portal should:
+
+* Provide a single interface for managing learning tasks and support requests.
+* Allow users to register, sign in and sign out.
+* Allow learners to manage their own tasks and view their progress.
+* Allow learners to book support sessions.
+* Provide progress calculations on the dashboard.
+* Include search, filter and sort functionality for tasks.
+* Provide a cookie-based preference.
+* Include a mini-game with score tracking.
+* Provide a printable progress summary.
+* Include JavaScript-based animation and controlled multimedia.
+
+## 6. Required Users
+
+### Learners
+
+Learners must be able to:
+
+* Register.
+* Sign in.
+* Sign out.
+* Authenticate their input.
+* Create tasks.
+* View tasks.
+* Edit tasks.
+* Complete tasks.
+* Delete tasks.
+* Book support sessions.
+* View their progress.
+* Use a cookie-based preference.
+* Play the mini-game and track their score.
+* Print a progress summary.
+
+### Assessor/Administrator
+
+The assessor or administrator should be able to view submitted support bookings and relevant learner activity, and update booking status where included in the approved scope.
+
+## 7. Required Application Features
+
+The system must include:
+
+* Student registration, sign-in, sign-out and authentication.
+* Task creation, viewing, editing, completion and deletion.
+* Support-session booking.
+* A dashboard with progress calculations.
+* Search, filter and sort functionality for tasks.
+* A cookie-based preference such as theme, display mode or last selected filter.
+* Passwords and sensitive data must not be stored in cookies.
+* A mini-game with score tracking.
+* At least one animation driven by JavaScript timers.
+* At least one controlled multimedia element.
+* Firebase Realtime Database integration.
+* REST API CRUD operations.
+
+## 8. Technologies
+
+The project will use:
+
+* HTML5
+* CSS3
+* JavaScript ES6 or later
+* Firebase Realtime Database
+* Firebase Authentication
+* Firebase REST API
+* Git
+* GitHub
+* An assessor-approved JavaScript framework or library
+* GitHub Actions
+
+## 9. Expected Outcome
+
+The final product will be a functional Learner Support Portal that provides learners with a central platform to manage their learning tasks, book support sessions, monitor their progress and participate in learning activities.
+
+The system should be readable, testable and demonstrate the required JavaScript, Firebase, REST API, Git and GitHub development skills.

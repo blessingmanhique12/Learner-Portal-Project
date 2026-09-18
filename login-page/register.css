@@ -284,12 +284,6 @@ button.secondary-button {
 	transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
-button:disabled {
-	cursor: wait;
-	opacity: 0.68;
-	transform: none;
-}
-
 .primary-button {
 	margin-top: 3px;
 	color: #071b30;
@@ -309,22 +303,6 @@ button.secondary-button:focus-visible {
 	transform: translateY(-2px);
 	box-shadow: 0 10px 28px rgba(93, 149, 198, 0.28);
 	outline: none;
-}
-
-.message {
-	min-height: 18px;
-	margin: 0;
-	color: var(--muted);
-	font-size: 0.82rem;
-	font-weight: 600;
-}
-
-.message.success {
-	color: #12623a;
-}
-
-.message.error {
-	color: #9f1f1f;
 }
 
 @keyframes panel-arrival {

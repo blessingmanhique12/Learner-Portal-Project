@@ -45,7 +45,18 @@
           <label for="resetOtp">Confirm OTP</label>
           <input id="resetOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required>
 
-          <p class="reset-note">After OTP confirmation, Firebase will email you a secure password reset link.</p>
+          <!-- New password replaces the old account password after verification. -->
+          <label for="newPassword">New password</label>
+          <div class="password-field">
+            <input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters" required>
+            <!-- Eye button toggles whether the new password is visible. -->
+            <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false" data-toggle-password="newPassword">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
         </section>
 
         <!-- Live region displays OTP and validation feedback without a page reload. -->
@@ -53,7 +64,7 @@
 
         <footer class="form-actions">
           <!-- Submits the completed password recovery form. -->
-          <button id="resetButton" class="primary-button" type="submit">Send reset link</button>
+          <button id="resetButton" class="primary-button" type="submit">Reset password</button>
           <!-- Provides navigation to the other account actions. -->
           <nav class="account-links" aria-label="Account options">
             <a href="login.html">Back to login</a>
@@ -63,6 +74,6 @@
       </form>
     </main>
     <!-- Loads password visibility, OTP, and validation behavior. -->
-    <script type="module" src="reset.js"></script>
+    <script src="reset.js"></script>
 </body>
 </html>
