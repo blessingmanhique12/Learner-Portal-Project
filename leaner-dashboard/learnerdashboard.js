@@ -119,3 +119,163 @@ const openStage = (stage) => { const state = readState(); if (stage > 1 && !stat
 onAuthStateChanged(auth, async (user) => { if (!user) { localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; return; } try { let profile = readUser(); try { const snapshot = await getDoc(doc(db, 'registrations', user.uid)); profile = snapshot.exists() ? snapshot.data() : profile; } catch (error) { console.warn('Could not read Firestore profile.', error); } if (profile?.role && profile.role !== 'learner') { await signOut(auth); window.location.href = loginPath; return; } welcome.textContent = `Welcome, ${user.displayName || profile?.username || user.email}.`; messageFor('Firebase session connected.'); updateProgress(); showStageMenu(); } catch (error) { messageFor(error.message || 'Could not load your learner profile.', 'error'); } });
 if (logoutButton) logoutButton.addEventListener('click', async () => { await signOut(auth); localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; });
 updateProgress();
+
+const gameSessionInit = () => {
+	const questionNumber = document.getElementById('questionNumber');
+	if (!questionNumber) return;
+
+	const stages = [{ name: 'HTML Quiz', questions: [{ question: 'Which tag is used for the largest heading?', options: ['h1', 'p', 'div'], answer: 'h1' }, { question: 'Which tag is used to create a paragraph?', options: ['p', 'h1', 'section'], answer: 'p' }, { question: 'Which tag creates a link?', options: ['a', 'link', 'href'], answer: 'a' }, { question: 'Which tag is used to insert an image?', options: ['img', 'image', 'src'], answer: 'img' }, { question: 'Which element contains the visible webpage content?', options: ['body', 'head', 'title'], answer: 'body' }] }, { name: 'Rock, Paper, Scissors', questions: [{ question: 'Which choice beats Rock?', options: ['Paper', 'Scissors', 'Rock'], answer: 'Paper' }, { question: 'Which choice beats Paper?', options: ['Rock', 'Scissors', 'Paper'], answer: 'Scissors' }, { question: 'Which choice beats Scissors?', options: ['Rock', 'Paper', 'Scissors'], answer: 'Rock' }, { question: 'What happens when both players choose Rock?', options: ['Draw', 'Player 1 wins', 'Player 2 wins'], answer: 'Draw' }, { question: 'What beats Scissors?', options: ['Rock', 'Paper', 'Scissors'], answer: 'Rock' }] }, { name: 'CSS Quiz', questions: [{ question: 'What does CSS control?', options: ['Page styling', 'Database storage', 'Server security'], answer: 'Page styling' }, { question: 'Which property changes text colour?', options: ['color', 'font', 'text-style'], answer: 'color' }, { question: 'Which property changes the background?', options: ['background-color', 'back-color', 'bg'], answer: 'background-color' }, { question: 'Which property controls spacing inside an element?', options: ['padding', 'margin', 'spacing'], answer: 'padding' }, { question: 'Which symbol selects a class in CSS?', options: ['.', '#', '*'], answer: '.' }] }, { name: 'Chess', questions: [{ question: 'Which piece can move in an L-shape?', options: ['Knight', 'Bishop', 'Rook'], answer: 'Knight' }, { question: 'Which piece can move diagonally?', options: ['Bishop', 'Rook', 'King'], answer: 'Bishop' }, { question: 'Which piece is the most important?', options: ['King', 'Queen', 'Knight'], answer: 'King' }, { question: 'How many squares are on a chess board?', options: ['64', '48', '32'], answer: '64' }, { question: 'Which piece moves horizontally and vertically?', options: ['Rook', 'Bishop', 'Knight'], answer: 'Rook' }] }, { name: 'JavaScript Quiz', questions: [{ question: 'Which keyword declares a variable that can be reassigned?', options: ['let', 'const', 'fixed'], answer: 'let' }, { question: 'Which keyword creates a constant?', options: ['const', 'constant', 'fixed'], answer: 'const' }, { question: 'Which symbol is used for strict equality?', options: ['===', '=', '=='], answer: '===' }, { question: 'Which method adds an item to the end of an array?', options: ['push()', 'add()', 'append()'], answer: 'push()' }, { question: 'Which function prints something to the console?', options: ['console.log()', 'print()', 'write()'], answer: 'console.log()' }] }];
+
+	let currentStage = 0;
+	let currentQuestion = 0;
+	let score = 0;
+	let selectedAnswer = null;
+
+	const questionText = document.getElementById('questionText');
+	const answersContainer = document.getElementById('answers');
+	const progressFill = document.getElementById('progressFill');
+	const progressPercentage = document.getElementById('progressPercentage');
+	const overallBar = document.getElementById('overallBar');
+	const overallPercentage = document.getElementById('overallPercentage');
+	const stageBadge = document.getElementById('stageBadge');
+	const progressStage = document.getElementById('progressStage');
+	const completedQuestions = document.getElementById('completedQuestions');
+	const remainingQuestions = document.getElementById('remainingQuestions');
+	const currentStageElement = document.getElementById('currentStage');
+	const scoreElement = document.getElementById('score');
+	const sessionStage = document.getElementById('sessionStage');
+	const feedback = document.getElementById('feedback');
+	const sessionStatus = document.getElementById('sessionStatus');
+
+	const updateProgress = () => {
+		const stage = stages[currentStage];
+		const total = stage.questions.length;
+		const progress = (currentQuestion / total) * 100;
+		if (progressFill) progressFill.style.width = `${progress}%`;
+		if (progressPercentage) progressPercentage.textContent = `${Math.round(progress)}%`;
+		if (stageBadge) stageBadge.textContent = `STAGE ${currentStage}`;
+		if (progressStage) progressStage.textContent = `STAGE ${currentStage}`;
+
+		const totalQuestions = stages.reduce((sum, stageItem) => sum + stageItem.questions.length, 0);
+		const completedBefore = stages.slice(0, currentStage).reduce((sum, stageItem) => sum + stageItem.questions.length, 0);
+		const overallCompleted = completedBefore + currentQuestion;
+		const overallProgress = (overallCompleted / totalQuestions) * 100;
+		if (overallBar) overallBar.style.width = `${overallProgress}%`;
+		if (overallPercentage) overallPercentage.textContent = `${Math.round(overallProgress)}%`;
+		if (completedQuestions) completedQuestions.textContent = overallCompleted;
+		if (remainingQuestions) remainingQuestions.textContent = totalQuestions - overallCompleted;
+		if (scoreElement) scoreElement.textContent = score;
+	};
+
+	const updateStageButtons = () => {
+		document.querySelectorAll('.stage-btn').forEach((button, index) => {
+			button.classList.toggle('active', index === currentStage);
+		});
+	};
+
+	const loadQuestion = () => {
+		const stage = stages[currentStage];
+		const question = stage.questions[currentQuestion];
+		if (questionNumber) questionNumber.textContent = `Question ${currentQuestion + 1} of ${stage.questions.length}`;
+		if (questionText) questionText.textContent = question.question;
+		if (answersContainer) answersContainer.innerHTML = '';
+		if (sessionStage) sessionStage.textContent = stage.name;
+		if (currentStageElement) currentStageElement.textContent = currentStage + 1;
+		selectedAnswer = null;
+		if (feedback) {
+			feedback.textContent = '';
+			feedback.className = 'feedback';
+		}
+
+		question.options.forEach((option) => {
+			const label = document.createElement('label');
+			label.className = 'answer';
+			label.innerHTML = `<input type="radio" name="answer" value="${option}"><span>${option}</span>`;
+			const radio = label.querySelector('input');
+			radio.addEventListener('change', () => {
+				selectedAnswer = option;
+				document.querySelectorAll('.answer').forEach((item) => item.classList.remove('selected'));
+				label.classList.add('selected');
+			});
+			answersContainer?.appendChild(label);
+		});
+
+		updateProgress();
+		updateStageButtons();
+	};
+
+	document.getElementById('nextQuestionBtn')?.addEventListener('click', () => {
+		if (!selectedAnswer) {
+			if (feedback) {
+				feedback.textContent = 'Please select an answer first.';
+				feedback.className = 'feedback incorrect';
+			}
+			return;
+		}
+
+		const correctAnswer = stages[currentStage].questions[currentQuestion].answer;
+		if (selectedAnswer === correctAnswer) {
+			score++;
+			if (feedback) {
+				feedback.textContent = 'Correct! Well done.';
+				feedback.className = 'feedback correct';
+			}
+		} else if (feedback) {
+			feedback.textContent = `Incorrect. The correct answer is ${correctAnswer}.`;
+			feedback.className = 'feedback incorrect';
+		}
+
+		setTimeout(() => {
+			currentQuestion++;
+			if (currentQuestion >= stages[currentStage].questions.length) {
+				currentQuestion = 0;
+				if (currentStage < stages.length - 1) {
+					currentStage++;
+					if (sessionStatus) sessionStatus.textContent = 'Stage completed';
+				} else {
+					currentStage = stages.length - 1;
+					if (sessionStatus) sessionStatus.textContent = 'Programme completed';
+				}
+			}
+			loadQuestion();
+		}, 700);
+	});
+
+	document.getElementById('restartStageBtn')?.addEventListener('click', () => {
+		currentQuestion = 0;
+		selectedAnswer = null;
+		if (sessionStatus) sessionStatus.textContent = 'In progress';
+		loadQuestion();
+	});
+
+	document.getElementById('restartAllBtn')?.addEventListener('click', () => {
+		currentStage = 0;
+		currentQuestion = 0;
+		score = 0;
+		selectedAnswer = null;
+		if (sessionStatus) sessionStatus.textContent = 'In progress';
+		loadQuestion();
+	});
+
+	document.querySelectorAll('.stage-btn').forEach((button, index) => {
+		button.addEventListener('click', () => {
+			currentStage = index;
+			currentQuestion = 0;
+			selectedAnswer = null;
+			if (sessionStatus) sessionStatus.textContent = 'In progress';
+			loadQuestion();
+		});
+	});
+
+	document.getElementById('signOutBtn')?.addEventListener('click', () => {
+		alert('You have signed out.');
+	});
+
+	document.getElementById('supportBtn')?.addEventListener('click', () => {
+		alert('Support booking section coming soon.');
+	});
+
+	loadQuestion();
+};
+
+gameSessionInit();
