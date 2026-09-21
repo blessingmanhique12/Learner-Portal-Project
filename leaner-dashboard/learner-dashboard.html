@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Learner Dashboard | LearnerHub</title>
 	<link rel="stylesheet" href="learner-dashboard.css">
+	<link rel="stylesheet" href="../game/stage1-html/stage1-html.css">
+	<link rel="stylesheet" href="../game/stage2-rps/stage2-rps.css">
+	<link rel="stylesheet" href="../game/stage3-css/stage3-css.css">
+	<link rel="stylesheet" href="../game/stage4-chess/stage4-chess.css">
+	<link rel="stylesheet" href="../game/stage5-javascript/stage5-javascript.css">
 	<script type="module" src="learnerdashboard.js" defer></script>
 </head>
+
 <body>
 	<main class="dashboard-shell">
 		<header class="dashboard-header">
@@ -21,11 +28,24 @@
 		<section class="dashboard-grid" aria-label="Learner tools">
 			<article>
 				<h2>My programme</h2>
-				<p id="programmeValue">Loading...</p>
+				<div id="programmeValue" class="programme-content">
+					<div class="programme-stage">
+						<h3>HTML Level</h3>
+						<p>Complete the short HTML lesson, answer one question at a time, and then play the game when
+							the quiz is done.</p>
+						<button id="startQuizButton" type="button" class="primary-button">Start quiz</button>
+					</div>
+				</div>
 			</article>
 			<article>
 				<h2>Progress</h2>
-				<p>Track goals, tasks, support bookings, and learning progress from here.</p>
+				<div class="progress-box">
+					<div class="progress-track" aria-label="Learner progress">
+						<div id="progressFill" class="progress-fill"></div>
+					</div>
+					<p id="progressText" class="progress-text">0%</p>
+				</div>
+				<p id="progressBadge" class="badge neutral">Stage 0</p>
 			</article>
 			<article>
 				<h2>Support</h2>
@@ -36,4 +56,5 @@
 		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
 	</main>
 </body>
+
 </html>
