@@ -89,8 +89,19 @@ Setup Instructions
 How to Run the Project
 
 1. Open the project folder.
-2. Open "index.html" in a web browser, or use the Live Server extension in Visual Studio Code.
-3. Begin testing the application.
+2. Start a local static server from the project root, for example `python -m http.server 8000`.
+3. Open `http://localhost:8000` in a browser.
+
+Publish the App Online
+
+The project is configured for Firebase Hosting and uses the existing Firebase project `ron-learn`.
+
+1. Install the Firebase CLI: `npm install -g firebase-tools`.
+2. Sign in: `firebase login`.
+3. From the project root, publish the site: `firebase deploy --only hosting`.
+4. Open the Hosting URL printed by Firebase. It will be available from any computer with an internet connection.
+
+The root `index.html` redirects visitors to the login page. Firebase Authentication accounts work across computers. Programme progress is currently stored in browser `localStorage`, so progress is specific to the browser/device until it is moved to Firestore.
 
 Project Milestones
 

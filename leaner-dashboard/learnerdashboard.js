@@ -1,98 +1,121 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
-import {
-	getAuth,
-	onAuthStateChanged,
-	signOut
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
-import {
-	doc,
-	getDoc,
-	getFirestore
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+import { doc, getDoc, getFirestore } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+import { chessPieces, chooseComputerMove, cssQuestions, determineWinner, getComputerChoice, htmlQuestions, javascriptQuestions, rpsChoices, stageNames } from '../game/game-content.js';
 
-const firebaseConfig = {
-	apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E',
-	authDomain: 'ron-learn.firebaseapp.com',
-	projectId: 'ron-learn',
-	storageBucket: 'ron-learn.firebasestorage.app',
-	messagingSenderId: '63585372704',
-	appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45',
-	measurementId: 'G-M7RYTEEEVS'
-};
-
+const firebaseConfig = { apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E', authDomain: 'ron-learn.firebaseapp.com', projectId: 'ron-learn', storageBucket: 'ron-learn.firebasestorage.app', messagingSenderId: '63585372704', appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45', measurementId: 'G-M7RYTEEEVS' };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 const loginPath = '../login-page/login.html';
 const welcome = document.getElementById('learnerWelcome');
 const programmeValue = document.getElementById('programmeValue');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const progressBadge = document.getElementById('progressBadge');
 const message = document.getElementById('dashboardMessage');
 const logoutButton = document.getElementById('logoutButton');
+const progressStorageKey = 'learnerHubProgress';
+const defaults = { totalProgress: 0, stage1Complete: false, stage2Complete: false, stage3Complete: false, stage4Complete: false, stage5Complete: false, quizScore: 0, quizAttempted: false, cssQuizScore: 0, cssQuizAttempted: false, javascriptQuizScore: 0, javascriptQuizAttempted: false, rpsWins: 0, rpsRounds: 0, chessLevel: '', chessComplete: false };
+const quizState = { html: { index: 0, answers: [] }, css: { index: 0, answers: [] }, javascript: { index: 0, answers: [] } };
+let chess;
+let chessModule;
+let selectedSquare = '';
 
-const setMessage = (text, type = '') => {
-	if (!message) {
-		return;
-	}
-
-	message.textContent = text;
-	message.className = type ? `message ${type}` : 'message';
+const messageFor = (text, type = '') => { if (message) { message.textContent = text; message.className = type ? `message ${type}` : 'message'; } };
+const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+const readUser = () => { try { return JSON.parse(localStorage.getItem('learnerHubUser')) || null; } catch { return null; } };
+const readState = () => { try { return { ...defaults, ...(JSON.parse(localStorage.getItem(progressStorageKey)) || {}) }; } catch { return { ...defaults }; } };
+const saveState = (state) => localStorage.setItem(progressStorageKey, JSON.stringify(state));
+const completedCount = (state) => [state.stage1Complete, state.stage2Complete, state.stage3Complete, state.stage4Complete, state.stage5Complete].filter(Boolean).length;
+const updateProgress = () => {
+	const state = readState();
+	const percentage = completedCount(state) * 20;
+	if (progressFill) progressFill.style.width = `${percentage}%`;
+	if (progressText) progressText.textContent = `${percentage}%`;
+	if (progressBadge) { progressBadge.textContent = percentage ? `Stage ${completedCount(state)} complete` : 'Stage 0'; progressBadge.className = percentage ? 'badge success' : 'badge neutral'; }
+};
+const attach = (id, event, callback) => document.getElementById(id)?.addEventListener(event, callback);
+const panel = (html) => { const element = document.createElement('div'); element.className = 'programme-stage'; element.innerHTML = html; return element; };
+const renderProgramme = (content) => {
+	programmeValue.innerHTML = '';
+	const navigation = document.createElement('div');
+	navigation.className = 'stage-nav';
+	const state = readState();
+	navigation.innerHTML = `<span class="stage-nav-label">Programme stages</span>${stageNames.map((name, index) => { const stage = index + 1; const unlocked = stage === 1 || state[`stage${stage - 1}Complete`]; return `<button type="button" class="stage-link ${state[`stage${stage}Complete`] ? 'complete' : ''}" data-stage="${stage}" ${unlocked ? '' : 'disabled'}>${state[`stage${stage}Complete`] ? `Replay ${name}` : `Stage ${stage}: ${name}`}</button>`; }).join('')}<button id="restartProgrammeButton" type="button" class="secondary">Restart all</button>`;
+	navigation.querySelectorAll('[data-stage]').forEach((button) => button.addEventListener('click', () => openStage(Number(button.dataset.stage))));
+	navigation.querySelector('#restartProgrammeButton').addEventListener('click', restartAll);
+	programmeValue.append(navigation, content);
+};
+const restartAll = () => { quizState.html = { index: 0, answers: [] }; quizState.css = { index: 0, answers: [] }; quizState.javascript = { index: 0, answers: [] }; localStorage.removeItem(progressStorageKey); updateProgress(); showStageMenu(); messageFor('Programme restarted. All five stages are ready to play.', 'success'); };
+const replayStage = (stage) => {
+	const state = readState();
+	if (stage === 1) { state.stage1Complete = false; quizState.html = { index: 0, answers: [] }; }
+	if (stage === 2) Object.assign(state, { stage2Complete: false, rpsWins: 0, rpsRounds: 0 });
+	if (stage === 3) { state.stage3Complete = false; quizState.css = { index: 0, answers: [] }; }
+	if (stage === 4) Object.assign(state, { stage4Complete: false, chessComplete: false, chessLevel: '' });
+	if (stage === 5) { state.stage5Complete = false; quizState.javascript = { index: 0, answers: [] }; }
+	saveState(state); updateProgress(); openStage(stage);
+};
+const showStageMenu = () => {
+	const state = readState();
+	renderProgramme(panel('<h3>Choose a stage</h3><p>Complete each stage to unlock the next one. Completed stages can be replayed from the programme stages above.</p>'));
+	if (!state.stage1Complete) openStage(1); else if (!state.stage2Complete) openStage(2); else if (!state.stage3Complete) openStage(3); else if (!state.stage4Complete) openStage(4); else if (!state.stage5Complete) openStage(5);
 };
 
-const redirectToLogin = () => {
-	localStorage.removeItem('learnerHubUser');
-	window.location.href = loginPath;
+const renderQuiz = (kind) => {
+	const questions = kind === 'html' ? htmlQuestions : kind === 'css' ? cssQuestions : javascriptQuestions;
+	const current = quizState[kind];
+	const question = questions[current.index];
+	const content = panel(`<p class="round-display">Question ${current.index + 1} of ${questions.length}</p><div class="quiz-wrap"><div class="quiz-question"><h3>${escapeHtml(question.question)}</h3><div class="answer-list">${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="${kind}Option" value="${String.fromCharCode(65 + index)}"><span>${escapeHtml(option)}</span></label>`).join('')}</div></div><div class="quiz-actions"><button id="nextQuestionButton" type="button" class="secondary">${current.index === questions.length - 1 ? 'Finish quiz' : 'Next question'}</button><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button></div></div>`);
+	renderProgramme(content);
+	attach('nextQuestionButton', 'click', () => { const selected = document.querySelector(`input[name="${kind}Option"]:checked`); if (!selected) { messageFor('Please choose an answer before continuing.', 'error'); return; } current.answers[current.index] = selected.value; if (current.index < questions.length - 1) { current.index += 1; renderQuiz(kind); } else finishQuiz(kind, questions); });
+	attach('replayCurrentStage', 'click', () => replayStage(kind === 'html' ? 1 : kind === 'css' ? 3 : 5));
+};
+const finishQuiz = (kind, questions) => {
+	const current = quizState[kind];
+	const score = questions.reduce((total, question, index) => total + (current.answers[index] === question.answer ? 1 : 0), 0);
+	const percentage = Math.round(score / questions.length * 100);
+	const stage = kind === 'html' ? 1 : kind === 'css' ? 3 : 5;
+	const state = readState();
+	const scoreKey = kind === 'html' ? 'quizScore' : kind === 'css' ? 'cssQuizScore' : 'javascriptQuizScore';
+	const attemptedKey = kind === 'html' ? 'quizAttempted' : kind === 'css' ? 'cssQuizAttempted' : 'javascriptQuizAttempted';
+	state[scoreKey] = score;
+	state[attemptedKey] = true;
+	if (percentage >= 70) {
+		state[`stage${stage}Complete`] = true; saveState(state); updateProgress(); messageFor(`Stage ${stage} complete. You scored ${percentage}%.`, 'success');
+		const quizTitle = kind === 'html' ? 'HTML' : kind === 'css' ? 'CSS' : 'JavaScript';
+		const content = panel(`<h3>${quizTitle} quiz complete</h3><p>You scored ${score} out of ${questions.length} (${percentage}%).</p><p class="result-message success">The next stage is unlocked.</p>${stage < 5 ? `<div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage ${stage + 1}</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>` : '<button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button>'}`);
+		renderProgramme(content); attach('nextStageButton', 'click', () => openStage(stage + 1)); attach('replayCurrentStage', 'click', () => replayStage(stage));
+	} else {
+		messageFor(`You scored ${percentage}%. You need at least 70% to continue.`, 'error');
+		const content = panel(`<h3>Try the ${kind === 'javascript' ? 'JavaScript' : kind.toUpperCase()} quiz again</h3><p>You scored ${score} out of ${questions.length} (${percentage}%).</p><p class="result-message error">Reach 70% to unlock the next stage.</p><button id="retryQuiz" type="button" class="primary-button">Retry quiz</button>`);
+		renderProgramme(content); attach('retryQuiz', 'click', () => replayStage(stage));
+	}
 };
 
-const readStoredUser = () => {
-	try {
-		return JSON.parse(localStorage.getItem('learnerHubUser')) || null;
-	} catch {
-		return null;
-	}
+const renderRps = () => {
+	const state = readState();
+	if (state.stage2Complete) { const content = panel(`<h3>Stage 2 complete</h3><p class="score-text">Final score: ${state.rpsWins} / 5</p><p class="result-message success">You won 3 out of 5 rounds. Stage 3 is now unlocked.</p><div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage 3</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>`); renderProgramme(content); attach('nextStageButton', 'click', () => openStage(3)); attach('replayCurrentStage', 'click', () => replayStage(2)); return; }
+	if (state.rpsRounds >= 5) { const content = panel(`<h3>Rock, Paper, Scissors</h3><p class="score-text">Score: ${state.rpsWins} / 5</p><p class="result-message error">You need 3 wins out of 5.</p><button id="retryRps" type="button" class="primary-button">Play this stage again</button>`); renderProgramme(content); attach('retryRps', 'click', () => replayStage(2)); return; }
+	const choiceButtons = rpsChoices.map(({ value, label, hand }) => `<button type="button" class="rps-choice" data-choice="${value}" aria-label="Choose ${label.toLowerCase()}"><span class="hand-sign" aria-hidden="true">${hand}</span><span>${label}</span></button>`).join('');
+	const content = panel(`<h3>Stage 2: Rock, Paper, Scissors</h3><p class="round-display">Round ${state.rpsRounds + 1} of 5</p><p class="score-text">Score: ${state.rpsWins} / 5</p><div class="rps-buttons">${choiceButtons}</div><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>`);
+	renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(2));
+	content.querySelectorAll('.rps-choice').forEach((button) => button.addEventListener('click', () => { const next = readState(); const result = determineWinner(button.dataset.choice, getComputerChoice()); next.rpsRounds += 1; if (result === 'win') next.rpsWins += 1; if (next.rpsRounds >= 5 && next.rpsWins >= 3) { next.stage2Complete = true; messageFor('Stage 2 complete! Stage 3 is unlocked.', 'success'); } saveState(next); updateProgress(); renderRps(); }));
 };
 
-onAuthStateChanged(auth, async (user) => {
-	if (!user) {
-		redirectToLogin();
-		return;
-	}
-
-	try {
-		let profile = readStoredUser();
-
-		try {
-			const profileSnapshot = await getDoc(doc(db, 'registrations', user.uid));
-			profile = profileSnapshot.exists() ? profileSnapshot.data() : profile;
-		} catch (error) {
-			console.warn('Could not read Firestore profile. Using stored learner session.', error);
-		}
-
-		if (profile?.role && profile.role !== 'learner') {
-			await signOut(auth);
-			redirectToLogin();
-			return;
-		}
-
-		const displayName = user.displayName || profile?.username || user.email;
-		welcome.textContent = `Welcome, ${displayName}.`;
-		programmeValue.textContent = profile?.programme || 'No programme saved yet.';
-		localStorage.setItem('learnerHubUser', JSON.stringify({
-			uid: user.uid,
-			email: user.email,
-			displayName,
-			role: 'learner',
-			programme: profile?.programme || ''
-		}));
-		setMessage('Firebase session connected.');
-	} catch (error) {
-		setMessage(error.message || 'Could not load your learner profile.', 'error');
-	}
-});
-
-if (logoutButton) {
-	logoutButton.addEventListener('click', async () => {
-		await signOut(auth);
-		redirectToLogin();
-	});
-}
+const renderChessPicker = () => { const content = panel('<h3>Stage 4: Chess</h3><p>Choose a level, then play as White against the computer.</p><div class="chess-levels"><button type="button" class="chess-level" data-level="beginner"><strong>Beginner</strong><span>Random computer moves</span></button><button type="button" class="chess-level" data-level="mid"><strong>Mid level</strong><span>Computer prefers captures</span></button><button type="button" class="chess-level" data-level="hard"><strong>Hard</strong><span>Computer looks for strong moves</span></button></div><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>'); renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(4)); content.querySelectorAll('.chess-level').forEach((button) => button.addEventListener('click', () => startChess(button.dataset.level))); };
+const startChess = async (level) => { if (!chessModule) chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm'); chess = new chessModule.Chess(); selectedSquare = ''; const state = readState(); state.chessLevel = level; state.chessComplete = false; saveState(state); renderChess(level); };
+const renderChess = (level, status = 'Your turn. Choose a white piece.') => { const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']; const squares = chess.board().map((row, rowIndex) => row.map((piece, columnIndex) => { const square = `${files[columnIndex]}${8 - rowIndex}`; const pieceClass = piece ? ` ${piece.color === 'w' ? 'white-piece' : 'black-piece'}` : ''; return `<button type="button" class="chess-square ${(rowIndex + columnIndex) % 2 ? 'dark' : 'light'}${pieceClass}${square === selectedSquare ? ' selected' : ''}" data-square="${square}">${piece ? chessPieces[piece.color][piece.type] : ''}</button>`; }).join('')).join(''); const content = panel(`<h3>Stage 4: Chess <span class="chess-level-label">${level}</span></h3><p class="round-display">You are White. Win the game to complete this stage.</p><div class="chess-board">${squares}</div><p class="result-message" aria-live="polite">${escapeHtml(status)}</p><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>`); renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(4)); content.querySelectorAll('.chess-square').forEach((button) => button.addEventListener('click', () => selectSquare(button.dataset.square, level))); };
+const computerMove = (level) => { const move = chooseComputerMove(chess.moves({ verbose: true }), level); if (move) chess.move({ from: move.from, to: move.to, promotion: 'q' }); };
+const completeChess = (level) => { const state = readState(); state.stage4Complete = true; state.chessComplete = true; saveState(state); updateProgress(); messageFor('Stage 4 complete! Stage 5 is unlocked.', 'success'); const content = panel(`<h3>Stage 4 complete</h3><p>You won the ${level} chess game.</p><p class="result-message success">Stage 5 JavaScript quiz is now unlocked.</p><div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage 5</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>`); renderProgramme(content); attach('nextStageButton', 'click', () => openStage(5)); attach('replayCurrentStage', 'click', () => replayStage(4)); };
+const selectSquare = (square, level) => {
+	const piece = chess.get(square);
+	if (!selectedSquare) { if (piece?.color === 'w') { selectedSquare = square; renderChess(level, 'Choose a destination square.'); } return; }
+	try { chess.move({ from: selectedSquare, to: square, promotion: 'q' }); selectedSquare = ''; if (chess.isGameOver()) { completeChess(level); return; } computerMove(level); if (chess.isGameOver()) { renderChess(level, 'The computer won this game. Restart the stage to try again.'); return; } renderChess(level); }
+	catch { selectedSquare = piece?.color === 'w' ? square : ''; renderChess(level, selectedSquare ? 'Choose a destination square.' : 'That move is not legal.'); }
+};
+const openStage = (stage) => { const state = readState(); if (stage > 1 && !state[`stage${stage - 1}Complete`]) { messageFor(`Complete Stage ${stage - 1} first to unlock this stage.`, 'error'); return; } if (stage === 1) { quizState.html = { index: 0, answers: [] }; renderQuiz('html'); } if (stage === 2) renderRps(); if (stage === 3) { quizState.css = { index: 0, answers: [] }; renderQuiz('css'); } if (stage === 4) state.chessLevel ? startChess(state.chessLevel) : renderChessPicker(); if (stage === 5) { quizState.javascript = { index: 0, answers: [] }; renderQuiz('javascript'); } };
+onAuthStateChanged(auth, async (user) => { if (!user) { localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; return; } try { let profile = readUser(); try { const snapshot = await getDoc(doc(db, 'registrations', user.uid)); profile = snapshot.exists() ? snapshot.data() : profile; } catch (error) { console.warn('Could not read Firestore profile.', error); } if (profile?.role && profile.role !== 'learner') { await signOut(auth); window.location.href = loginPath; return; } welcome.textContent = `Welcome, ${user.displayName || profile?.username || user.email}.`; messageFor('Firebase session connected.'); updateProgress(); showStageMenu(); } catch (error) { messageFor(error.message || 'Could not load your learner profile.', 'error'); } });
+if (logoutButton) logoutButton.addEventListener('click', async () => { await signOut(auth); localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; });
+updateProgress();
