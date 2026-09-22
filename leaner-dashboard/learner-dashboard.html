@@ -1,31 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Learner Dashboard | LearnerHub</title>
 	<link rel="stylesheet" href="learner-dashboard.css">
+	<link rel="stylesheet" href="../game/stage1-html/stage1-html.css">
+	<link rel="stylesheet" href="../game/stage2-rps/stage2-rps.css">
+	<link rel="stylesheet" href="../game/stage3-css/stage3-css.css">
+	<link rel="stylesheet" href="../game/stage4-chess/stage4-chess.css">
+	<link rel="stylesheet" href="../game/stage5-javascript/stage5-javascript.css">
 	<script type="module" src="learnerdashboard.js" defer></script>
 </head>
+
 <body>
+	<header class="topbar">
+		<div class="topbar-inner">
+			<div class="brand-wrap" aria-label="LearnerHub home">
+				<div class="brand-logo" aria-hidden="true">📖</div>
+				<span class="brand-name">LearnerHub</span>
+			</div>
+
+			<nav class="top-nav" aria-label="Main navigation">
+				<a href="#" class="nav-link active">Home</a>
+				<a href="#" class="nav-link">My Goals</a>
+				<a href="#" class="nav-link">Tasks</a>
+				<a href="#" class="nav-link">Support</a>
+				<a href="#" class="nav-link">Progress</a>
+			</nav>
+
+			<button id="logoutButton" type="button" class="logout-btn">Sign out</button>
+		</div>
+	</header>
+
 	<main class="dashboard-shell">
-		<header class="dashboard-header">
+		<section class="dashboard-header">
 			<div>
-				<p class="eyebrow">LearnerHub</p>
-				<h1>Learner dashboard</h1>
+				<p class="eyebrow">Learner Support Portal</p>
 				<p id="learnerWelcome" class="muted">Checking your Firebase session...</p>
 			</div>
-			<button id="logoutButton" type="button">Sign out</button>
-		</header>
+			<div class="profile-pill" aria-label="Current learner profile">BN</div>
+		</section>
+
+		<section class="overall-progress card" aria-label="Overall progress">
+			<div class="progress-header">
+				<div class="icon-box success-box" aria-hidden="true">📈</div>
+				<div>
+					<h3>Overall Progress</h3>
+					<p>Your programme learning journey</p>
+				</div>
+			</div>
+			<div class="overall-progress-meta">
+				<strong>60% complete</strong>
+			</div>
+			<div class="bar-track large-track" aria-label="Overall learning progress">
+				<div class="bar-fill" style="width: 60%;"></div>
+			</div>
+		</section>
+
+		<section class="summary-grid" aria-label="Learning summary cards">
+			<article class="summary-card card">
+				<div class="summary-top">
+					<div>
+						<p class="summary-label">Goals</p>
+						<p class="metric-num">12</p>
+						<p class="summary-note">Total goals</p>
+					</div>
+					<div class="icon-box blue-box" aria-hidden="true">🎯</div>
+				</div>
+			</article>
+
+			<article class="summary-card card">
+				<div class="summary-top">
+					<div>
+						<p class="summary-label">Outstanding Tasks</p>
+						<p class="metric-num">7</p>
+						<p class="summary-note">Tasks remaining</p>
+					</div>
+					<div class="icon-box blue-box" aria-hidden="true">✅</div>
+				</div>
+			</article>
+
+			<article class="summary-card card">
+				<div class="summary-top">
+					<div>
+						<p class="summary-label">Overdue Tasks</p>
+						<p class="metric-num overdue">2</p>
+						<p class="summary-note">Tasks past due</p>
+					</div>
+					<div class="icon-box warning-box" aria-hidden="true">⏰</div>
+				</div>
+			</article>
+
+			<article class="summary-card card">
+				<div class="summary-top">
+					<div>
+						<p class="summary-label">Support Bookings</p>
+						<p class="metric-num">3</p>
+						<p class="summary-note">Upcoming sessions</p>
+					</div>
+					<div class="icon-box success-box" aria-hidden="true">📅</div>
+				</div>
+			</article>
+		</section>
+
+		<section class="content-grid" aria-label="Main dashboard content">
+			<article class="info-card card">
+				<div class="card-header with-button">
+					<div>
+						<h3>My Goals</h3>
+						<p>Focus areas for your learning journey</p>
+					</div>
+					<button type="button" class="primary-btn small-btn">+ Add Goal</button>
+				</div>
+				<ul class="goal-list">
+					<li>Complete JavaScript Fundamentals</li>
+					<li>Improve Git and GitHub skills</li>
+					<li>Complete portfolio project</li>
+					<li>Prepare for final assessment</li>
+				</ul>
+			</article>
+
+			<article class="info-card card">
+				<div class="card-header with-button">
+					<div>
+						<h3>My Support Bookings</h3>
+						<p>Upcoming sessions with your support team</p>
+					</div>
+					<button type="button" class="primary-btn small-btn">Book New Session</button>
+				</div>
+				<div class="booking-info">
+					<div class="booking-row">
+						<span class="label">Date</span>
+						<strong>12 Sep 2026</strong>
+					</div>
+					<div class="booking-row">
+						<span class="label">Time</span>
+						<strong>14:00 – 15:00</strong>
+					</div>
+					<div class="booking-row">
+						<span class="label">Mentor</span>
+						<strong>Mrs. James</strong>
+					</div>
+					<div class="booking-row">
+						<span class="label">Topic</span>
+						<strong>Portfolio Review</strong>
+					</div>
+				</div>
+			</article>
+		</section>
+
+		<section class="lower-grid" aria-label="Assessment and tasks">
+			<article class="assessment-card card">
+				<div class="assessment-wrap">
+					<div class="icon-box blue-box" aria-hidden="true">🎓</div>
+					<div class="assessment-copy">
+						<h3>Software Development Skills Assessment</h3>
+						<p>Test your understanding of the skills covered in your programme.</p>
+					</div>
+				</div>
+				<div class="bar-track large-track small-progress-bar" aria-label="Assessment progress">
+					<div class="bar-fill" style="width: 50%;"></div>
+				</div>
+				<p class="assessment-status">5 of 10 questions complete</p>
+				<button type="button" class="primary-btn">Start Quiz</button>
+			</article>
+
+			<article class="tasks-card card">
+				<div class="card-header">
+					<div>
+						<h3>My Tasks</h3>
+						<p>Keep your coursework and deadlines on track</p>
+					</div>
+				</div>
+				<ul class="task-list">
+					<li class="task-item">
+						<label><input type="checkbox" checked> Complete JavaScript exercise</label>
+						<div class="task-meta-row">
+							<span class="task-date">Due: 12 Sep</span>
+							<span class="task-status completed">completed</span>
+						</div>
+						<button type="button" class="delete-btn" aria-label="Delete task">🗑</button>
+					</li>
+					<li class="task-item">
+						<label><input type="checkbox"> Build GitHub profile README</label>
+						<div class="task-meta-row">
+							<span class="task-date">Due: 15 Sep</span>
+							<span class="task-status outstanding">outstanding</span>
+						</div>
+						<button type="button" class="delete-btn" aria-label="Delete task">🗑</button>
+					</li>
+					<li class="task-item">
+						<label><input type="checkbox" checked> Review portfolio checklist</label>
+						<div class="task-meta-row">
+							<span class="task-date">Due: 18 Sep</span>
+							<span class="task-status completed">completed</span>
+						</div>
+						<button type="button" class="delete-btn" aria-label="Delete task">🗑</button>
+					</li>
+				</ul>
+			</article>
+		</section>
 
 		<section class="dashboard-grid" aria-label="Learner tools">
 			<article>
 				<h2>My programme</h2>
-				<p id="programmeValue">Loading...</p>
+				<div id="programmeValue" class="programme-content">
+					<div class="programme-stage">
+						<h3>HTML Level</h3>
+						<p>Complete the short HTML lesson, answer one question at a time, and then play the game when
+							the quiz is done.</p>
+						<button id="startQuizButton" type="button" class="primary-button">Start quiz</button>
+					</div>
+				</div>
 			</article>
 			<article>
 				<h2>Progress</h2>
-				<p>Track goals, tasks, support bookings, and learning progress from here.</p>
+				<div class="progress-box">
+					<div class="progress-track" aria-label="Learner progress">
+						<div id="progressFill" class="progress-fill"></div>
+					</div>
+					<p id="progressText" class="progress-text">0%</p>
+				</div>
+				<p id="progressBadge" class="badge neutral">Stage 0</p>
 			</article>
 			<article>
 				<h2>Support</h2>
@@ -33,7 +231,50 @@
 			</article>
 		</section>
 
+		<section class="programme-stage" aria-label="Skills check">
+			<h3>Software Development Skills Assessment</h3>
+			<p>Test your understanding of the skills covered in your programme.</p>
+			<div class="progress-track" aria-label="Skills assessment progress">
+				<div class="progress-fill" style="width: 50%;"></div>
+			</div>
+			<p class="progress-text">5 of 10 questions complete</p>
+			<button id="startQuizBtn" type="button" class="primary-button">Start Quiz</button>
+		</section>
+
 		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
 	</main>
+
+	<footer class="site-footer">
+		<div class="footer-inner">
+			<div class="footer-links">
+				<a href="#">Help Center</a>
+				<a href="#">Terms</a>
+				<a href="#">Privacy</a>
+			</div>
+			<div class="footer-meta">
+				<span>support@LearnerHub.co.za</span>
+				<span>+27 10 555 0142</span>
+				<span>© 2026 LearnerHub</span>
+			</div>
+		</div>
+	</footer>
+
+	<div id="quizModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="quiz-modal-title">
+		<div class="modal-panel bg-white p-6">
+			<div class="flex justify-between gap-4">
+				<div>
+					<h2 id="quiz-modal-title" class="text-xl font-bold text-[#16324f]">Skills check</h2>
+					<p id="quizStep" class="text-sm text-[#627182] mt-1">Question loading...</p>
+				</div>
+				<button id="closeQuiz" class="text-[#627182]" type="button" aria-label="Close quiz">
+					<span aria-hidden="true">×</span>
+				</button>
+			</div>
+			<div id="quizContent" class="mt-6"></div>
+		</div>
+	</div>
+
+	<div id="toast" class="toast hidden" role="status"></div>
 </body>
+
 </html>
