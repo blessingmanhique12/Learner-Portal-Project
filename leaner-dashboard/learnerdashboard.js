@@ -96,3 +96,308 @@ if (logoutButton) {
 		redirectToLogin();
 	});
 }
+
+
+// CHECKLIST //
+// Task class
+class Task {
+
+    constructor(title) {
+
+        this.title = title;
+
+        this.completed = false;
+    }
+
+
+    complete() {
+
+        this.completed = !this.completed;
+
+    }
+
+}
+
+
+// Storing all tasks
+let tasks = [];
+
+
+// Get HTML elements
+const taskInput =
+    document.getElementById("taskInput");
+
+const addTaskBtn =
+    document.getElementById("addTaskBtn");
+
+const taskList =
+    document.getElementById("taskList");
+
+const checklistProgress =
+    document.getElementById("checklistProgress");
+
+const checklistProgressText =
+    document.getElementById("checklistProgressText");
+
+
+// For adding tasks
+addTaskBtn.addEventListener("click", function () {
+
+    const taskName =
+        taskInput.value.trim();
+
+
+    // Checking if the input is empty
+    if (taskName === "") {
+
+        alert("Please enter a task.");
+
+        return;
+    }
+
+
+    // Create a Task object
+    const task =
+        new Task(taskName);
+
+
+    // For adding tasks to array
+    tasks.push(task);
+
+
+    // Clear input
+    taskInput.value = "";
+
+
+    // Display tasks
+    displayTasks();
+
+});
+
+
+// Display tasks
+function displayTasks() {
+
+    taskList.innerHTML = "";
+
+
+    tasks.forEach(function (task, index) {
+
+        const listItem =
+            document.createElement("li");
+
+
+        listItem.className =
+            "task-item";
+
+
+        if (task.completed) {
+
+            listItem.classList.add("completed");
+
+        }
+
+
+        listItem.innerHTML = `
+
+            <span>
+                ${task.title}
+            </span>
+
+            <div>
+
+                <button
+                    type="button"
+                    onclick="completeTask(${index})">
+
+                    ${task.completed
+                        ? "Undo"
+                        : "Complete"}
+
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="deleteTask(${index})">
+
+                    Delete
+
+                </button>
+
+            </div>
+        `;
+
+
+        taskList.appendChild(listItem);
+
+    });
+
+
+    updateChecklistProgress();
+
+}
+
+
+// Complete task
+function completeTask(index) {
+
+    tasks[index].complete();
+
+    displayTasks();
+
+}
+
+
+// Delete task
+function deleteTask(index) {
+
+    tasks.splice(index, 1);
+
+    displayTasks();
+
+}
+
+// SUPPORT SESSIONS // 
+// Support Session class
+class SupportSession {
+
+    constructor(topic, date, notes) {
+
+        this.topic = topic;
+
+        this.date = date;
+
+        this.notes = notes;
+
+        this.status = "Pending";
+
+    }
+
+}
+
+
+// Store support sessions
+let supportSessions = [];
+
+
+// Get HTML elements
+const supportForm =
+    document.getElementById("supportForm");
+
+const supportTopic =
+    document.getElementById("supportTopic");
+
+const supportDate =
+    document.getElementById("supportDate");
+
+const supportNotes =
+    document.getElementById("supportNotes");
+
+const sessionList =
+    document.getElementById("sessionList");
+
+
+// Submit support request
+supportForm.addEventListener("submit", function (event) {
+
+    event.preventDefault();
+
+
+    // Get values from form
+    const topic =
+        supportTopic.value;
+
+    const date =
+        supportDate.value;
+
+    const notes =
+        supportNotes.value.trim();
+
+
+    // Create SupportSession object
+    const session =
+        new SupportSession(
+            topic,
+            date,
+            notes
+        );
+
+
+    // Add session to array
+    supportSessions.push(session);
+
+
+    // Clear form
+    supportForm.reset();
+
+
+    // Display sessions
+    displaySessions();
+
+});
+
+
+// Display support sessions
+function displaySessions() {
+
+    sessionList.innerHTML = "";
+
+
+    supportSessions.forEach(function (session, index) {
+
+        const sessionCard =
+            document.createElement("div");
+
+
+        sessionCard.className =
+            "session-card";
+
+
+        sessionCard.innerHTML = `
+
+            <h3>
+                ${session.topic}
+            </h3>
+
+            <p>
+                <strong>Date:</strong>
+                ${session.date}
+            </p>
+
+            <p>
+                <strong>Notes:</strong>
+                ${session.notes}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                ${session.status}
+            </p>
+
+            <button
+                type="button"
+                onclick="cancelSession(${index})">
+
+                Cancel Request
+
+            </button>
+
+        `;
+
+
+        sessionList.appendChild(sessionCard);
+
+    });
+
+}
+
+
+// Cancel support session
+function cancelSession(index) {
+
+    supportSessions.splice(index, 1);
+
+    displaySessions();
+
+}
