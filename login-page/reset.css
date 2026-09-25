@@ -1,0 +1,77 @@
+/* Reuses the same brand colors, photo, animation, and controls as login and register. */
+@import url('login.css');
+
+/* Centers the reset workflow and gives it enough width for recovery fields. */
+.reset-page {
+	display: grid;
+	justify-items: center;
+	width: 100%;
+}
+
+.reset-form {
+	/* Gives the recovery form the same spacious desktop scale as login. */
+	width: min(100%, 560px);
+	gap: 8px;
+	padding: 26px 42px;
+}
+
+.reset-form .brand-logo,
+.reset-form .brand-logo img {
+	/* Keeps the shared logo compact enough for the complete reset workflow. */
+	height: 64px;
+}
+
+.reset-form .brand-logo img {
+	/* Limits logo width while preserving its original proportions. */
+	width: min(100%, 270px);
+}
+
+.reset-form h1 {
+	/* Uses the shared navy brand color for the reset heading. */
+	margin: 4px 0 2px;
+	color: var(--navy);
+	font-size: 1.2rem;
+	font-weight: 700;
+}
+
+.reset-form .form-section {
+	/* Adds readable spacing between recovery fields. */
+	gap: 8px;
+}
+
+.reset-form input,
+.reset-form button {
+	/* Makes controls comfortable to use on desktop touch screens. */
+	min-height: 44px;
+}
+
+@media (max-width: 520px) {
+	.reset-form {
+		/* Reduces the card size so every reset control fits on mobile. */
+		width: min(100%, 480px);
+		gap: 4px;
+		padding: 16px 18px;
+	}
+
+	.reset-form .brand-logo,
+	.reset-form .brand-logo img {
+		/* Shrinks the logo for narrow screens. */
+		height: 48px;
+	}
+
+	.reset-form .brand-logo img {
+		/* Keeps the logo centered without causing horizontal overflow. */
+		width: min(100%, 205px);
+	}
+
+	.reset-form .form-section {
+		/* Tightens field spacing on small screens. */
+		gap: 5px;
+	}
+
+	.reset-form input,
+	.reset-form button {
+		/* Preserves usable touch targets in the compact layout. */
+		min-height: 38px;
+	}
+}
