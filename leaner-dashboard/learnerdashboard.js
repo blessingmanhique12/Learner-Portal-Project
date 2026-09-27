@@ -45,7 +45,16 @@ const progressText = document.getElementById('progressText');
 const progressBadge = document.getElementById('progressBadge');
 const message = document.getElementById('dashboardMessage');
 const logoutButton = document.getElementById('logoutButton');
-const progressStorageKey = 'learnerHubProgress';
+let currentUserUid = null;
+
+const getProgressStorageKey = () => {
+    if (!currentUserUid) {
+        return null;
+    }
+
+    return `learnerHubProgress_${currentUserUid}`;
+};
+
 const defaults = { totalProgress: 0, stage1Complete: false, stage2Complete: false, stage3Complete: false, stage4Complete: false, stage5Complete: false, quizScore: 0, quizAttempted: false, cssQuizScore: 0, cssQuizAttempted: false, javascriptQuizScore: 0, javascriptQuizAttempted: false, chessLevel: '', chessComplete: false };
 const quizState = { html: { index: 0, answers: [] }, css: { index: 0, answers: [] }, javascript: { index: 0, answers: [] } };
 let chess;
@@ -54,9 +63,33 @@ let selectedSquare = '';
 
 const messageFor = (text, type = '') => { if (message) { message.textContent = text; message.className = type ? `message ${type}` : 'message'; } };
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-const readUser = () => { try { return JSON.parse(localStorage.getItem('learnerHubUser')) || null; } catch { return null; } };
-const readState = () => { try { return { ...defaults, ...(JSON.parse(localStorage.getItem(progressStorageKey)) || {}) }; } catch { return { ...defaults }; } };
-const saveState = (state) => localStorage.setItem(progressStorageKey, JSON.stringify(state));
+const readState = () => {
+    const storageKey = getProgressStorageKey();
+
+    if (!storageKey) {
+        return { ...defaults };
+    }
+
+    try {
+        return {
+            ...defaults,
+            ...(JSON.parse(localStorage.getItem(storageKey)) || {})
+        };
+    } catch {
+        return { ...defaults };
+    }
+};
+
+const saveState = (state) => {
+    const storageKey = getProgressStorageKey();
+
+    if (!storageKey) {
+        return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(state));
+};
+
 const completedCount = (state) => [state.stage1Complete, state.stage2Complete, state.stage3Complete, state.stage4Complete, state.stage5Complete].filter(Boolean).length;
 const updateProgress = () => {
 	const state = readState();
@@ -77,7 +110,35 @@ const renderProgramme = (content) => {
 	navigation.querySelector('#restartProgrammeButton').addEventListener('click', restartAll);
 	programmeValue.append(navigation, content);
 };
-const restartAll = () => { gameManager.resetAllGames(); quizState.html = { index: 0, answers: [] }; quizState.javascript = { index: 0, answers: [] }; localStorage.removeItem(progressStorageKey); updateProgress(); showStageMenu(); messageFor('Programme restarted. All five stages are ready to play.', 'success'); };
+
+const restartAll = () => {
+    gameManager.resetAllGames();
+
+    quizState.html = {
+        index: 0,
+        answers: []
+    };
+
+    quizState.javascript = {
+        index: 0,
+        answers: []
+    };
+
+    const storageKey = getProgressStorageKey();
+
+    if (storageKey) {
+        localStorage.removeItem(storageKey);
+    }
+
+    updateProgress();
+    showStageMenu();
+
+    messageFor(
+        'Programme restarted. All five stages are ready to play.',
+        'success'
+    );
+};
+
 const replayStage = (stage) => {
 	const state = readState();
 	if (stage === 1) { state.stage1Complete = false; quizState.html = { index: 0, answers: [] }; }
@@ -389,9 +450,81 @@ const selectSquare = (square, level) => {
 	catch { selectedSquare = piece?.color === 'w' ? square : ''; renderChess(level, selectedSquare ? 'Choose a destination square.' : 'That move is not legal.'); }
 };
 const openStage = (stage) => { const state = readState(); if (stage > 1 && !state[`stage${stage - 1}Complete`]) { messageFor(`Complete Stage ${stage - 1} first to unlock this stage.`, 'error'); return; } if (stage === 1) { quizState.html = { index: 0, answers: [] }; renderQuiz('html'); } if (stage === 2) renderRps(); if (stage === 3) renderQuiz('css'); if (stage === 4) state.chessLevel ? startChess(state.chessLevel) : renderChessPicker(); if (stage === 5) { quizState.javascript = { index: 0, answers: [] }; renderQuiz('javascript'); } };
-onAuthStateChanged(auth, async (user) => { if (!user) { localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; return; } try { let profile = readUser(); try {const snapshot = await getDoc(doc(db, 'users', user.uid)); profile = snapshot.exists() ? snapshot.data() : profile; } catch (error) { console.warn('Could not read Firestore profile.', error); } if (profile?.role && profile.role !== 'learner') { await signOut(auth); window.location.href = loginPath; return; } welcome.textContent = `Welcome, ${user.displayName || profile?.displayName || user.email}.`; messageFor('Firebase session connected.'); updateProgress(); showStageMenu(); } catch (error) { messageFor(error.message || 'Could not load your learner profile.', 'error'); } });
-if (logoutButton) logoutButton.addEventListener('click', async () => { await signOut(auth); localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; });
-updateProgress();
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        currentUserUid = null;
+        window.location.href = loginPath;
+        return;
+    }
+
+    try {
+        // Firebase Authentication is the source of truth
+        currentUserUid = user.uid;
+
+        // Read this user's profile only
+        const profileRef = doc(db, 'registrations', user.uid);
+
+console.log('Firebase project:', db.app.options.projectId);
+console.log('Logged-in UID:', user.uid);
+console.log('Looking for Firestore document:', `registrations/${user.uid}`);
+
+const profileSnapshot = await getDoc(profileRef);
+
+console.log('Profile exists:', profileSnapshot.exists());
+
+if (profileSnapshot.exists()) {
+    console.log('Profile data:', profileSnapshot.data());
+}
+
+        if (!profileSnapshot.exists()) {
+            messageFor(
+                'Your learner profile could not be found.',
+                'error'
+            );
+            return;
+        }
+
+        const profile = profileSnapshot.data();
+
+        // Only learners may access the learner dashboard
+        if (profile.role !== 'learner') {
+            await signOut(auth);
+            window.location.href = loginPath;
+            return;
+        }
+
+        const displayName =
+            profile.displayName ||
+            profile.username ||
+            user.displayName ||
+            user.email;
+
+        welcome.textContent = `Welcome, ${displayName}.`;
+
+        messageFor('Firebase session connected.');
+
+        updateProgress();
+        showStageMenu();
+
+    } catch (error) {
+        console.error('Dashboard error:', error);
+
+        messageFor(
+            error.message || 'Could not load your learner profile.',
+            'error'
+        );
+    }
+});
+
+if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+        currentUserUid = null;
+        await signOut(auth);
+        window.location.href = loginPath;
+    });
+}
+
 
 const gameSessionInit = () => {
 	const questionNumber = document.getElementById('questionNumber');

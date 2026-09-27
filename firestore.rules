@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /registrations/{userId} {
+
+      // Allow a signed-in user to create their own profile.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email;
+
+      // Allow a user to read their own profile.
+      allow read: if request.auth != null
+        && request.auth.uid == userId;
+
+      // Allow a user to update their own profile.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email;
+
+      // Do not allow users to delete their profiles.
+      allow delete: if false;
+    }
+  }
+}
