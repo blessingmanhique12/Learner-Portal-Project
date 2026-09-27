@@ -1,13 +1,43 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
-import { doc, getDoc, getFirestore } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
-import { chessPieces, chooseComputerMove, cssQuestions, determineWinner, getComputerChoice, htmlQuestions, javascriptQuestions, rpsChoices, stageNames } from '../game/game-content.js';
+import { auth, db } from '../login-page/firebase-config.js';
 
-const firebaseConfig = { apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E', authDomain: 'ron-learn.firebaseapp.com', projectId: 'ron-learn', storageBucket: 'ron-learn.firebasestorage.app', messagingSenderId: '63585372704', appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45', measurementId: 'G-M7RYTEEEVS' };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+import {
+        onAuthStateChanged,
+        signOut
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+
+import {
+        doc,
+        getDoc
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+
+import {
+        stage1,
+        stage2,
+        stage3,
+        stage4,
+        stage5,
+        chessPieces,
+        chooseComputerMove,
+        cssQuestions,
+        htmlQuestions,
+        javascriptQuestions,
+        rpsChoices,
+        stageNames
+} from '../game/game-content.js';
+
+import { GameManager } from '../game/classes/GameManager.js';
+
 const loginPath = '../login-page/login.html';
+const gameManager = new GameManager({
+    stage1,
+    stage2,
+    stage3,
+    stage4,
+    stage5,
+    htmlQuestions,
+    cssQuestions,
+    javascriptQuestions
+});
 const welcome = document.getElementById('learnerWelcome');
 const programmeValue = document.getElementById('programmeValue');
 const progressFill = document.getElementById('progressFill');
@@ -16,7 +46,7 @@ const progressBadge = document.getElementById('progressBadge');
 const message = document.getElementById('dashboardMessage');
 const logoutButton = document.getElementById('logoutButton');
 const progressStorageKey = 'learnerHubProgress';
-const defaults = { totalProgress: 0, stage1Complete: false, stage2Complete: false, stage3Complete: false, stage4Complete: false, stage5Complete: false, quizScore: 0, quizAttempted: false, cssQuizScore: 0, cssQuizAttempted: false, javascriptQuizScore: 0, javascriptQuizAttempted: false, rpsWins: 0, rpsRounds: 0, chessLevel: '', chessComplete: false };
+const defaults = { totalProgress: 0, stage1Complete: false, stage2Complete: false, stage3Complete: false, stage4Complete: false, stage5Complete: false, quizScore: 0, quizAttempted: false, cssQuizScore: 0, cssQuizAttempted: false, javascriptQuizScore: 0, javascriptQuizAttempted: false, chessLevel: '', chessComplete: false };
 const quizState = { html: { index: 0, answers: [] }, css: { index: 0, answers: [] }, javascript: { index: 0, answers: [] } };
 let chess;
 let chessModule;
@@ -47,12 +77,18 @@ const renderProgramme = (content) => {
 	navigation.querySelector('#restartProgrammeButton').addEventListener('click', restartAll);
 	programmeValue.append(navigation, content);
 };
-const restartAll = () => { quizState.html = { index: 0, answers: [] }; quizState.css = { index: 0, answers: [] }; quizState.javascript = { index: 0, answers: [] }; localStorage.removeItem(progressStorageKey); updateProgress(); showStageMenu(); messageFor('Programme restarted. All five stages are ready to play.', 'success'); };
+const restartAll = () => { gameManager.resetAllGames(); quizState.html = { index: 0, answers: [] }; quizState.javascript = { index: 0, answers: [] }; localStorage.removeItem(progressStorageKey); updateProgress(); showStageMenu(); messageFor('Programme restarted. All five stages are ready to play.', 'success'); };
 const replayStage = (stage) => {
 	const state = readState();
 	if (stage === 1) { state.stage1Complete = false; quizState.html = { index: 0, answers: [] }; }
-	if (stage === 2) Object.assign(state, { stage2Complete: false, rpsWins: 0, rpsRounds: 0 });
-	if (stage === 3) { state.stage3Complete = false; quizState.css = { index: 0, answers: [] }; }
+	if (stage === 2) {
+		gameManager.rpsGame.reset();
+		state.stage2Complete = false;
+	}
+	if (stage === 3) {
+		gameManager.cssGame.reset();
+		state.stage3Complete = false;
+	}
 	if (stage === 4) Object.assign(state, { stage4Complete: false, chessComplete: false, chessLevel: '' });
 	if (stage === 5) { state.stage5Complete = false; quizState.javascript = { index: 0, answers: [] }; }
 	saveState(state); updateProgress(); openStage(stage);
@@ -65,43 +101,280 @@ const showStageMenu = () => {
 
 const renderQuiz = (kind) => {
 	const questions = kind === 'html' ? htmlQuestions : kind === 'css' ? cssQuestions : javascriptQuestions;
-	const current = quizState[kind];
-	const question = questions[current.index];
-	const content = panel(`<p class="round-display">Question ${current.index + 1} of ${questions.length}</p><div class="quiz-wrap"><div class="quiz-question"><h3>${escapeHtml(question.question)}</h3><div class="answer-list">${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="${kind}Option" value="${String.fromCharCode(65 + index)}"><span>${escapeHtml(option)}</span></label>`).join('')}</div></div><div class="quiz-actions"><button id="nextQuestionButton" type="button" class="secondary">${current.index === questions.length - 1 ? 'Finish quiz' : 'Next question'}</button><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button></div></div>`);
+	const current = kind === 'html'
+		? gameManager.htmlGame
+		: kind === 'css'
+			? gameManager.cssGame
+			: gameManager.javascriptGame;
+	const question = questions[current.currentQuestion];
+	const content = panel(`<p class="round-display">Question ${current.currentQuestion + 1} of ${questions.length}</p><div class="quiz-wrap"><div class="quiz-question"><h3>${escapeHtml(question.question)}</h3><div class="answer-list">${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="${kind}Option" value="${String.fromCharCode(65 + index)}"><span>${escapeHtml(option)}</span></label>`).join('')}</div></div><div class="quiz-actions"><button id="nextQuestionButton" type="button" class="secondary">${current.currentQuestion === questions.length - 1 ? 'Finish quiz' : 'Next question'}</button><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button></div></div>`);
 	renderProgramme(content);
-	attach('nextQuestionButton', 'click', () => { const selected = document.querySelector(`input[name="${kind}Option"]:checked`); if (!selected) { messageFor('Please choose an answer before continuing.', 'error'); return; } current.answers[current.index] = selected.value; if (current.index < questions.length - 1) { current.index += 1; renderQuiz(kind); } else finishQuiz(kind, questions); });
+	attach('nextQuestionButton', 'click', () => {
+    const selected = document.querySelector(`input[name="${kind}Option"]:checked`);
+
+    if (!selected) {
+        messageFor('Please choose an answer before continuing.', 'error');
+        return;
+    }
+
+    current.answerQuestion(selected.value);
+
+    if (current.currentQuestion < questions.length - 1) {
+        current.nextQuestion();
+        renderQuiz(kind);
+    } else {
+        finishQuiz(kind, questions);
+    }
+});
+
 	attach('replayCurrentStage', 'click', () => replayStage(kind === 'html' ? 1 : kind === 'css' ? 3 : 5));
 };
 const finishQuiz = (kind, questions) => {
-	const current = quizState[kind];
-	const score = questions.reduce((total, question, index) => total + (current.answers[index] === question.answer ? 1 : 0), 0);
-	const percentage = Math.round(score / questions.length * 100);
-	const stage = kind === 'html' ? 1 : kind === 'css' ? 3 : 5;
+	const current = kind === 'html'
+		? gameManager.htmlGame
+		: kind === 'css'
+			? gameManager.cssGame
+			: gameManager.javascriptGame;
+
+	const score = current.calculateScore();
+	const percentage = current.getPercentage();
+
+	const stage = kind === 'html'
+		? 1
+		: kind === 'css'
+			? 3
+			: 5;
+
 	const state = readState();
-	const scoreKey = kind === 'html' ? 'quizScore' : kind === 'css' ? 'cssQuizScore' : 'javascriptQuizScore';
-	const attemptedKey = kind === 'html' ? 'quizAttempted' : kind === 'css' ? 'cssQuizAttempted' : 'javascriptQuizAttempted';
+
+	const scoreKey = kind === 'html'
+		? 'quizScore'
+		: kind === 'css'
+			? 'cssQuizScore'
+			: 'javascriptQuizScore';
+
+	const attemptedKey = kind === 'html'
+		? 'quizAttempted'
+		: kind === 'css'
+			? 'cssQuizAttempted'
+			: 'javascriptQuizAttempted';
+
 	state[scoreKey] = score;
 	state[attemptedKey] = true;
-	if (percentage >= 70) {
-		state[`stage${stage}Complete`] = true; saveState(state); updateProgress(); messageFor(`Stage ${stage} complete. You scored ${percentage}%.`, 'success');
-		const quizTitle = kind === 'html' ? 'HTML' : kind === 'css' ? 'CSS' : 'JavaScript';
-		const content = panel(`<h3>${quizTitle} quiz complete</h3><p>You scored ${score} out of ${questions.length} (${percentage}%).</p><p class="result-message success">The next stage is unlocked.</p>${stage < 5 ? `<div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage ${stage + 1}</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>` : '<button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button>'}`);
-		renderProgramme(content); attach('nextStageButton', 'click', () => openStage(stage + 1)); attach('replayCurrentStage', 'click', () => replayStage(stage));
+
+	if (current.hasPassed()) {
+		state[`stage${stage}Complete`] = true;
+	}
+
+	saveState(state);
+	updateProgress();
+
+	if (current.hasPassed()) {
+		messageFor(
+			`Stage ${stage} complete. You scored ${percentage}%.`,
+			'success'
+		);
+
+		const quizTitle = kind === 'html'
+			? 'HTML'
+			: kind === 'css'
+				? 'CSS'
+				: 'JavaScript';
+
+		const content = panel(`
+			<h3>${quizTitle} quiz complete</h3>
+
+			<p>
+				You scored ${score} out of ${questions.length}
+				(${percentage}%).
+			</p>
+
+			<p class="result-message success">
+				The next stage is unlocked.
+			</p>
+
+			${
+				stage < 5
+					? `
+						<div class="quiz-actions">
+							<button
+								id="nextStageButton"
+								type="button"
+								class="primary-button">
+								Continue to Stage ${stage + 1}
+							</button>
+
+							<button
+								id="replayCurrentStage"
+								type="button"
+								class="secondary">
+								Replay this stage
+							</button>
+						</div>
+					`
+					: `
+						<button
+							id="replayCurrentStage"
+							type="button"
+							class="secondary">
+							Replay this stage
+						</button>
+					`
+			}
+		`);
+
+		renderProgramme(content);
+
+		if (stage < 5) {
+			attach(
+				'nextStageButton',
+				'click',
+				() => openStage(stage + 1)
+			);
+		}
+
+		attach(
+			'replayCurrentStage',
+			'click',
+			() => replayStage(stage)
+		);
 	} else {
-		messageFor(`You scored ${percentage}%. You need at least 70% to continue.`, 'error');
-		const content = panel(`<h3>Try the ${kind === 'javascript' ? 'JavaScript' : kind.toUpperCase()} quiz again</h3><p>You scored ${score} out of ${questions.length} (${percentage}%).</p><p class="result-message error">Reach 70% to unlock the next stage.</p><button id="retryQuiz" type="button" class="primary-button">Retry quiz</button>`);
-		renderProgramme(content); attach('retryQuiz', 'click', () => replayStage(stage));
+		messageFor(
+			`You scored ${percentage}%. You need at least 70% to continue.`,
+			'error'
+		);
+
+		const content = panel(`
+			<h3>
+				Try the ${
+					kind === 'javascript'
+						? 'JavaScript'
+						: kind.toUpperCase()
+				} quiz again
+			</h3>
+
+			<p>
+				You scored ${score} out of ${questions.length}
+				(${percentage}%).
+			</p>
+
+			<p class="result-message error">
+				Reach 70% to unlock the next stage.
+			</p>
+
+			<button
+				id="retryQuiz"
+				type="button"
+				class="primary-button">
+				Retry quiz
+			</button>
+		`);
+
+		renderProgramme(content);
+
+		attach(
+			'retryQuiz',
+			'click',
+			() => replayStage(stage)
+		);
 	}
 };
 
 const renderRps = () => {
-	const state = readState();
-	if (state.stage2Complete) { const content = panel(`<h3>Stage 2 complete</h3><p class="score-text">Final score: ${state.rpsWins} / 5</p><p class="result-message success">You won 3 out of 5 rounds. Stage 3 is now unlocked.</p><div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage 3</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>`); renderProgramme(content); attach('nextStageButton', 'click', () => openStage(3)); attach('replayCurrentStage', 'click', () => replayStage(2)); return; }
-	if (state.rpsRounds >= 5) { const content = panel(`<h3>Rock, Paper, Scissors</h3><p class="score-text">Score: ${state.rpsWins} / 5</p><p class="result-message error">You need 3 wins out of 5.</p><button id="retryRps" type="button" class="primary-button">Play this stage again</button>`); renderProgramme(content); attach('retryRps', 'click', () => replayStage(2)); return; }
-	const choiceButtons = rpsChoices.map(({ value, label, hand }) => `<button type="button" class="rps-choice" data-choice="${value}" aria-label="Choose ${label.toLowerCase()}"><span class="hand-sign" aria-hidden="true">${hand}</span><span>${label}</span></button>`).join('');
-	const content = panel(`<h3>Stage 2: Rock, Paper, Scissors</h3><p class="round-display">Round ${state.rpsRounds + 1} of 5</p><p class="score-text">Score: ${state.rpsWins} / 5</p><div class="rps-buttons">${choiceButtons}</div><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>`);
-	renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(2));
-	content.querySelectorAll('.rps-choice').forEach((button) => button.addEventListener('click', () => { const next = readState(); const result = determineWinner(button.dataset.choice, getComputerChoice()); next.rpsRounds += 1; if (result === 'win') next.rpsWins += 1; if (next.rpsRounds >= 5 && next.rpsWins >= 3) { next.stage2Complete = true; messageFor('Stage 2 complete! Stage 3 is unlocked.', 'success'); } saveState(next); updateProgress(); renderRps(); }));
+	const current = gameManager.rpsGame;
+
+	if (current.hasWon()) {
+		const state = readState();
+		if (!state.stage2Complete) {
+			state.stage2Complete = true;
+			saveState(state);
+			updateProgress();
+		}
+
+		const content = panel(`
+			<h3>Stage 2 complete</h3>
+			<p class="score-text">
+				Final score: ${current.playerWins} / ${current.totalRounds}
+			</p>
+			<p class="result-message success">
+				You won ${current.playerWins} rounds. Stage 3 is now unlocked.
+			</p>
+			<div class="quiz-actions">
+				<button id="nextStageButton" type="button" class="primary-button">
+					Continue to Stage 3
+				</button>
+				<button id="replayCurrentStage" type="button" class="secondary">
+					Replay this stage
+				</button>
+			</div>
+		`);
+
+		renderProgramme(content);
+		attach('nextStageButton', 'click', () => openStage(3));
+		attach('replayCurrentStage', 'click', () => replayStage(2));
+		return;
+	}
+
+	if (current.isFinished()) {
+		const content = panel(`
+			<h3>Rock, Paper, Scissors</h3>
+			<p class="score-text">
+				Score: ${current.playerWins} / ${current.totalRounds}
+			</p>
+			<p class="result-message error">
+				You need ${current.winningScore} wins to pass.
+			</p>
+			<button id="retryRps" type="button" class="primary-button">
+				Play this stage again
+			</button>
+		`);
+
+		renderProgramme(content);
+		attach('retryRps', 'click', () => replayStage(2));
+		return;
+	}
+
+	const choiceButtons = rpsChoices
+		.map(({ value, label, hand }) => `
+			<button
+				type="button"
+				class="rps-choice"
+				data-choice="${value}"
+				aria-label="Choose ${label.toLowerCase()}">
+				<span class="hand-sign" aria-hidden="true">${hand}</span>
+				<span>${label}</span>
+			</button>
+		`)
+		.join('');
+
+	const content = panel(`
+		<h3>Stage 2: Rock, Paper, Scissors</h3>
+		<p class="round-display">
+			Round ${current.roundsPlayed + 1} of ${current.totalRounds}
+		</p>
+		<p class="score-text">
+			Score: ${current.playerWins} / ${current.totalRounds}
+		</p>
+		<div class="rps-buttons">
+			${choiceButtons}
+		</div>
+		<button id="replayCurrentStage" type="button" class="secondary">
+			Restart this stage
+		</button>
+	`);
+
+	renderProgramme(content);
+	attach('replayCurrentStage', 'click', () => replayStage(2));
+
+	content.querySelectorAll('.rps-choice').forEach((button) => {
+		button.addEventListener('click', () => {
+			const playerChoice = button.dataset.choice;
+			const computerChoice = current.getComputerChoice(rpsChoices);
+
+			current.playRound(playerChoice, computerChoice);
+			renderRps();
+		});
+	});
 };
 
 const renderChessPicker = () => { const content = panel('<h3>Stage 4: Chess</h3><p>Choose a level, then play as White against the computer.</p><div class="chess-levels"><button type="button" class="chess-level" data-level="beginner"><strong>Beginner</strong><span>Random computer moves</span></button><button type="button" class="chess-level" data-level="mid"><strong>Mid level</strong><span>Computer prefers captures</span></button><button type="button" class="chess-level" data-level="hard"><strong>Hard</strong><span>Computer looks for strong moves</span></button></div><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>'); renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(4)); content.querySelectorAll('.chess-level').forEach((button) => button.addEventListener('click', () => startChess(button.dataset.level))); };
@@ -115,8 +388,8 @@ const selectSquare = (square, level) => {
 	try { chess.move({ from: selectedSquare, to: square, promotion: 'q' }); selectedSquare = ''; if (chess.isGameOver()) { completeChess(level); return; } computerMove(level); if (chess.isGameOver()) { renderChess(level, 'The computer won this game. Restart the stage to try again.'); return; } renderChess(level); }
 	catch { selectedSquare = piece?.color === 'w' ? square : ''; renderChess(level, selectedSquare ? 'Choose a destination square.' : 'That move is not legal.'); }
 };
-const openStage = (stage) => { const state = readState(); if (stage > 1 && !state[`stage${stage - 1}Complete`]) { messageFor(`Complete Stage ${stage - 1} first to unlock this stage.`, 'error'); return; } if (stage === 1) { quizState.html = { index: 0, answers: [] }; renderQuiz('html'); } if (stage === 2) renderRps(); if (stage === 3) { quizState.css = { index: 0, answers: [] }; renderQuiz('css'); } if (stage === 4) state.chessLevel ? startChess(state.chessLevel) : renderChessPicker(); if (stage === 5) { quizState.javascript = { index: 0, answers: [] }; renderQuiz('javascript'); } };
-onAuthStateChanged(auth, async (user) => { if (!user) { localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; return; } try { let profile = readUser(); try { const snapshot = await getDoc(doc(db, 'registrations', user.uid)); profile = snapshot.exists() ? snapshot.data() : profile; } catch (error) { console.warn('Could not read Firestore profile.', error); } if (profile?.role && profile.role !== 'learner') { await signOut(auth); window.location.href = loginPath; return; } welcome.textContent = `Welcome, ${user.displayName || profile?.username || user.email}.`; messageFor('Firebase session connected.'); updateProgress(); showStageMenu(); } catch (error) { messageFor(error.message || 'Could not load your learner profile.', 'error'); } });
+const openStage = (stage) => { const state = readState(); if (stage > 1 && !state[`stage${stage - 1}Complete`]) { messageFor(`Complete Stage ${stage - 1} first to unlock this stage.`, 'error'); return; } if (stage === 1) { quizState.html = { index: 0, answers: [] }; renderQuiz('html'); } if (stage === 2) renderRps(); if (stage === 3) renderQuiz('css'); if (stage === 4) state.chessLevel ? startChess(state.chessLevel) : renderChessPicker(); if (stage === 5) { quizState.javascript = { index: 0, answers: [] }; renderQuiz('javascript'); } };
+onAuthStateChanged(auth, async (user) => { if (!user) { localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; return; } try { let profile = readUser(); try {const snapshot = await getDoc(doc(db, 'users', user.uid)); profile = snapshot.exists() ? snapshot.data() : profile; } catch (error) { console.warn('Could not read Firestore profile.', error); } if (profile?.role && profile.role !== 'learner') { await signOut(auth); window.location.href = loginPath; return; } welcome.textContent = `Welcome, ${user.displayName || profile?.displayName || user.email}.`; messageFor('Firebase session connected.'); updateProgress(); showStageMenu(); } catch (error) { messageFor(error.message || 'Could not load your learner profile.', 'error'); } });
 if (logoutButton) logoutButton.addEventListener('click', async () => { await signOut(auth); localStorage.removeItem('learnerHubUser'); window.location.href = loginPath; });
 updateProgress();
 
@@ -240,314 +513,6 @@ const gameSessionInit = () => {
 			loadQuestion();
 		}, 700);
 	});
-<<<<<<< HEAD
-}
-
-
-// CHECKLIST //
-// Task class
-class Task {
-
-    constructor(title) {
-
-        this.title = title;
-
-        this.completed = false;
-    }
-
-
-    complete() {
-
-        this.completed = !this.completed;
-
-    }
-
-}
-
-
-// Storing all tasks
-let tasks = [];
-
-
-// Get HTML elements
-const taskInput =
-    document.getElementById("taskInput");
-
-const addTaskBtn =
-    document.getElementById("addTaskBtn");
-
-const taskList =
-    document.getElementById("taskList");
-
-const checklistProgress =
-    document.getElementById("checklistProgress");
-
-const checklistProgressText =
-    document.getElementById("checklistProgressText");
-
-
-// For adding tasks
-addTaskBtn.addEventListener("click", function () {
-
-    const taskName =
-        taskInput.value.trim();
-
-
-    // Checking if the input is empty
-    if (taskName === "") {
-
-        alert("Please enter a task.");
-
-        return;
-    }
-
-
-    // Create a Task object
-    const task =
-        new Task(taskName);
-
-
-    // For adding tasks to array
-    tasks.push(task);
-
-
-    // Clear input
-    taskInput.value = "";
-
-
-    // Display tasks
-    displayTasks();
-
-});
-
-
-// Display tasks
-function displayTasks() {
-
-    taskList.innerHTML = "";
-
-
-    tasks.forEach(function (task, index) {
-
-        const listItem =
-            document.createElement("li");
-
-
-        listItem.className =
-            "task-item";
-
-
-        if (task.completed) {
-
-            listItem.classList.add("completed");
-
-        }
-
-
-        listItem.innerHTML = `
-
-            <span>
-                ${task.title}
-            </span>
-
-            <div>
-
-                <button
-                    type="button"
-                    onclick="completeTask(${index})">
-
-                    ${task.completed
-                        ? "Undo"
-                        : "Complete"}
-
-                </button>
-
-
-                <button
-                    type="button"
-                    onclick="deleteTask(${index})">
-
-                    Delete
-
-                </button>
-
-            </div>
-        `;
-
-
-        taskList.appendChild(listItem);
-
-    });
-
-
-    updateChecklistProgress();
-
-}
-
-
-// Complete task
-function completeTask(index) {
-
-    tasks[index].complete();
-
-    displayTasks();
-
-}
-
-
-// Delete task
-function deleteTask(index) {
-
-    tasks.splice(index, 1);
-
-    displayTasks();
-
-}
-
-// SUPPORT SESSIONS // 
-// Support Session class
-class SupportSession {
-
-    constructor(topic, date, notes) {
-
-        this.topic = topic;
-
-        this.date = date;
-
-        this.notes = notes;
-
-        this.status = "Pending";
-
-    }
-
-}
-
-
-// Store support sessions
-let supportSessions = [];
-
-
-// Get HTML elements
-const supportForm =
-    document.getElementById("supportForm");
-
-const supportTopic =
-    document.getElementById("supportTopic");
-
-const supportDate =
-    document.getElementById("supportDate");
-
-const supportNotes =
-    document.getElementById("supportNotes");
-
-const sessionList =
-    document.getElementById("sessionList");
-
-
-// Submit support request
-supportForm.addEventListener("submit", function (event) {
-
-    event.preventDefault();
-
-
-    // Get values from form
-    const topic =
-        supportTopic.value;
-
-    const date =
-        supportDate.value;
-
-    const notes =
-        supportNotes.value.trim();
-
-
-    // Create SupportSession object
-    const session =
-        new SupportSession(
-            topic,
-            date,
-            notes
-        );
-
-
-    // Add session to array
-    supportSessions.push(session);
-
-
-    // Clear form
-    supportForm.reset();
-
-
-    // Display sessions
-    displaySessions();
-
-});
-
-
-// Display support sessions
-function displaySessions() {
-
-    sessionList.innerHTML = "";
-
-
-    supportSessions.forEach(function (session, index) {
-
-        const sessionCard =
-            document.createElement("div");
-
-
-        sessionCard.className =
-            "session-card";
-
-
-        sessionCard.innerHTML = `
-
-            <h3>
-                ${session.topic}
-            </h3>
-
-            <p>
-                <strong>Date:</strong>
-                ${session.date}
-            </p>
-
-            <p>
-                <strong>Notes:</strong>
-                ${session.notes}
-            </p>
-
-            <p>
-                <strong>Status:</strong>
-                ${session.status}
-            </p>
-
-            <button
-                type="button"
-                onclick="cancelSession(${index})">
-
-                Cancel Request
-
-            </button>
-
-        `;
-
-
-        sessionList.appendChild(sessionCard);
-
-    });
-
-}
-
-
-// Cancel support session
-function cancelSession(index) {
-
-    supportSessions.splice(index, 1);
-
-    displaySessions();
-
-}
-=======
 
 	document.getElementById('restartStageBtn')?.addEventListener('click', () => {
 		currentQuestion = 0;
@@ -586,5 +551,311 @@ function cancelSession(index) {
 	loadQuestion();
 };
 
+
+
+
+// CHECKLIST //
+// Task class
+class Task {
+
+	constructor(title) {
+
+		this.title = title;
+
+		this.completed = false;
+	}
+
+
+	complete() {
+
+		this.completed = !this.completed;
+
+	}
+
+}
+
+
+// Storing all tasks
+let tasks = [];
+
+
+// Get HTML elements
+const taskInput =
+	document.getElementById("taskInput");
+
+const addTaskBtn =
+	document.getElementById("addTaskBtn");
+
+const taskList =
+	document.getElementById("taskList");
+
+const checklistProgress =
+	document.getElementById("checklistProgress");
+
+const checklistProgressText =
+	document.getElementById("checklistProgressText");
+
+
+// For adding tasks
+addTaskBtn.addEventListener("click", function () {
+
+	const taskName =
+		taskInput.value.trim();
+
+
+	// Checking if the input is empty
+	if (taskName === "") {
+
+		alert("Please enter a task.");
+
+		return;
+	}
+
+
+	// Create a Task object
+	const task =
+		new Task(taskName);
+
+
+	// For adding tasks to array
+	tasks.push(task);
+
+
+	// Clear input
+	taskInput.value = "";
+
+
+	// Display tasks
+	displayTasks();
+
+});
+
+
+// Display tasks
+function displayTasks() {
+
+	taskList.innerHTML = "";
+
+
+	tasks.forEach(function (task, index) {
+
+		const listItem =
+			document.createElement("li");
+
+
+		listItem.className =
+			"task-item";
+
+
+		if (task.completed) {
+
+			listItem.classList.add("completed");
+
+		}
+
+
+		listItem.innerHTML = `
+
+            <span>
+                ${task.title}
+            </span>
+
+            <div>
+
+                <button
+                    type="button"
+                    onclick="completeTask(${index})">
+
+                    ${task.completed
+				? "Undo"
+				: "Complete"}
+
+                </button>
+
+
+                <button
+                    type="button"
+                    onclick="deleteTask(${index})">
+
+                    Delete
+
+                </button>
+
+            </div>
+        `;
+
+
+		taskList.appendChild(listItem);
+
+	});
+
+
+	updateChecklistProgress();
+
+}
+
+
+// Complete task
+function completeTask(index) {
+
+	tasks[index].complete();
+
+	displayTasks();
+
+}
+
+
+// Delete task
+function deleteTask(index) {
+
+	tasks.splice(index, 1);
+
+	displayTasks();
+
+}
+
+// SUPPORT SESSIONS // 
+// Support Session class
+class SupportSession {
+
+	constructor(topic, date, notes) {
+
+		this.topic = topic;
+
+		this.date = date;
+
+		this.notes = notes;
+
+		this.status = "Pending";
+
+	}
+
+}
+
+
+// Store support sessions
+let supportSessions = [];
+
+
+// Get HTML elements
+const supportForm =
+	document.getElementById("supportForm");
+
+const supportTopic =
+	document.getElementById("supportTopic");
+
+const supportDate =
+	document.getElementById("supportDate");
+
+const supportNotes =
+	document.getElementById("supportNotes");
+
+const sessionList =
+	document.getElementById("sessionList");
+
+
+// Submit support request
+supportForm.addEventListener("submit", function (event) {
+
+	event.preventDefault();
+
+
+	// Get values from form
+	const topic =
+		supportTopic.value;
+
+	const date =
+		supportDate.value;
+
+	const notes =
+		supportNotes.value.trim();
+
+
+	// Create SupportSession object
+	const session =
+		new SupportSession(
+			topic,
+			date,
+			notes
+		);
+
+
+	// Add session to array
+	supportSessions.push(session);
+
+
+	// Clear form
+	supportForm.reset();
+
+
+	// Display sessions
+	displaySessions();
+
+});
+
+
+// Display support sessions
+function displaySessions() {
+
+	sessionList.innerHTML = "";
+
+
+	supportSessions.forEach(function (session, index) {
+
+		const sessionCard =
+			document.createElement("div");
+
+
+		sessionCard.className =
+			"session-card";
+
+
+		sessionCard.innerHTML = `
+
+            <h3>
+                ${session.topic}
+            </h3>
+
+            <p>
+                <strong>Date:</strong>
+                ${session.date}
+            </p>
+
+            <p>
+                <strong>Notes:</strong>
+                ${session.notes}
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+                ${session.status}
+            </p>
+
+            <button
+                type="button"
+                onclick="cancelSession(${index})">
+
+                Cancel Request
+
+            </button>
+
+        `;
+
+
+		sessionList.appendChild(sessionCard);
+
+	});
+
+}
+
+
+// Cancel support session
+function cancelSession(index) {
+
+	supportSessions.splice(index, 1);
+
+	displaySessions();
+
+}
+
 gameSessionInit();
->>>>>>> c2f8658cb21f4e35faaa45a0710f9cb86f486da0
