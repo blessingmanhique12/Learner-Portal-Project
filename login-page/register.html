@@ -65,7 +65,7 @@
         <button id="sendRegisterOtp" class="secondary-button" type="button">Send OTP</button>
 
         <label for="registerOtp">Confirm OTP</label>
-        <input id="registerOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required>
+        <input id="registerOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
         </section>
 
         <!-- CAPTCHA is filled by the authentication service when enabled. -->
@@ -78,6 +78,6 @@
       </form>
     </main>
     <!-- Loads the password visibility and form interaction behavior. -->
-      <script src="register.js"></script>
+      <script type="module" src="register.js"></script>
 </body>
 </html>
