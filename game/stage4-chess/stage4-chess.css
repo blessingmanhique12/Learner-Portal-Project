@@ -1,0 +1,2 @@
+.stage4-chess .chess-board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; }
+.stage4-chess .chess-levels { display: grid; gap: 10px; }

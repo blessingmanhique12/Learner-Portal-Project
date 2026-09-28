@@ -1,0 +1,119 @@
+/* Shares the exact brand colors, photo background, logo motion, and form controls with register.css. */
+@import url('register.css');
+
+/* Keeps the login page aligned with the register page width and positioning. */
+.login-page {
+	display: grid;
+	justify-items: center;
+	width: 100%;
+}
+
+/* Gives the shorter login form a more comfortable, spacious desktop scale. */
+.login-form {
+	width: min(100%, 560px);
+	gap: 8px;
+	padding: 26px 42px;
+}
+
+/* Enlarges the logo without letting it dominate the login card. */
+.login-form .brand-logo,
+.login-form .brand-logo img {
+	height: 64px;
+}
+
+.login-form .brand-logo img {
+	width: min(100%, 270px);
+}
+
+/* Login-specific heading uses the same navy brand color as the form labels. */
+.login-form h1 {
+	margin: 4px 0 2px;
+	color: var(--navy);
+	font-size: 1.2rem;
+	font-weight: 700;
+}
+
+/* Larger controls improve readability and touch comfort on desktop screens. */
+.login-form .form-section {
+	gap: 8px;
+}
+
+.login-form input,
+.login-form select,
+.login-form button.primary-button {
+	min-height: 44px;
+}
+
+/* Leaves a stable space for validation and submission feedback. */
+.message {
+	min-height: 18px;
+	margin: 3px 0 0;
+	color: var(--navy);
+	font-size: 0.78rem;
+	text-align: center;
+}
+
+/* Places account links beneath the primary action without adding visual clutter. */
+.account-links {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 4px;
+}
+
+.account-links a {
+	color: var(--navy);
+	font-size: 0.78rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.account-links a:hover,
+.account-links a:focus-visible {
+	color: #5d95c6;
+	text-decoration: underline;
+	outline: none;
+}
+
+/* Indicates a failed login or incomplete form without using a browser alert. */
+.message.error {
+	color: #9b2c2c;
+}
+
+/* Indicates that the login form passed its local checks. */
+.message.success {
+	color: #176b4d;
+}
+
+@media (max-width: 520px) {
+	.login-form {
+		width: min(100%, 480px);
+		gap: 4px;
+		padding: 16px 18px;
+	}
+
+	.login-form .brand-logo,
+	.login-form .brand-logo img {
+		height: 48px;
+	}
+
+	.login-form .brand-logo img {
+		width: min(100%, 205px);
+	}
+
+	.login-form .form-section {
+		gap: 5px;
+	}
+
+	.login-form input,
+	.login-form select,
+	.login-form button.primary-button {
+		min-height: 38px;
+	}
+
+	.account-links {
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+}
