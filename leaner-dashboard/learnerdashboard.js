@@ -55,14 +55,64 @@ const getProgressStorageKey = () => {
     return `learnerHubProgress_${currentUserUid}`;
 };
 
-const defaults = { totalProgress: 0, stage1Complete: false, stage2Complete: false, stage3Complete: false, stage4Complete: false, stage5Complete: false, quizScore: 0, quizAttempted: false, cssQuizScore: 0, cssQuizAttempted: false, javascriptQuizScore: 0, javascriptQuizAttempted: false, chessLevel: '', chessComplete: false };
-const quizState = { html: { index: 0, answers: [] }, css: { index: 0, answers: [] }, javascript: { index: 0, answers: [] } };
+const defaults = {
+    totalProgress: 0,
+    stage1Complete: false,
+    stage2Complete: false,
+    stage3Complete: false,
+    stage4Complete: false,
+    stage5Complete: false,
+    quizScore: 0,
+    quizAttempted: false,
+    cssQuizScore: 0,
+    cssQuizAttempted: false,
+    javascriptQuizScore: 0,
+    javascriptQuizAttempted: false,
+    chessLevel: '',
+    chessComplete: false
+};
+
+const quizState = {
+    html: {
+        index: 0,
+        answers: []
+    },
+    css: {
+        index: 0,
+        answers: []
+    },
+    javascript: {
+        index: 0,
+        answers: []
+    }
+};
+
 let chess;
 let chessModule;
 let selectedSquare = '';
 
-const messageFor = (text, type = '') => { if (message) { message.textContent = text; message.className = type ? `message ${type}` : 'message'; } };
-const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+const messageFor = (text, type = '') => {
+    if (message) {
+        message.textContent = text;
+        message.className = type
+            ? `message ${type}`
+            : 'message';
+    }
+};
+
+const escapeHtml = (value) => {
+    return String(value).replace(
+        /[&<>'"]/g,
+        (character) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[character])
+    );
+};
+
 const readState = () => {
     const storageKey = getProgressStorageKey();
 
@@ -90,25 +140,111 @@ const saveState = (state) => {
     localStorage.setItem(storageKey, JSON.stringify(state));
 };
 
-const completedCount = (state) => [state.stage1Complete, state.stage2Complete, state.stage3Complete, state.stage4Complete, state.stage5Complete].filter(Boolean).length;
+const completedCount = (state) => [
+    state.stage1Complete,
+    state.stage2Complete,
+    state.stage3Complete,
+    state.stage4Complete,
+    state.stage5Complete
+].filter(Boolean).length;
+
 const updateProgress = () => {
-	const state = readState();
-	const percentage = completedCount(state) * 20;
-	if (progressFill) progressFill.style.width = `${percentage}%`;
-	if (progressText) progressText.textContent = `${percentage}%`;
-	if (progressBadge) { progressBadge.textContent = percentage ? `Stage ${completedCount(state)} complete` : 'Stage 0'; progressBadge.className = percentage ? 'badge success' : 'badge neutral'; }
+    const state = readState();
+    const percentage = completedCount(state) * 20;
+
+    if (progressFill) {
+        progressFill.style.width = `${percentage}%`;
+    }
+
+    if (progressText) {
+        progressText.textContent = `${percentage}%`;
+    }
+
+    if (progressBadge) {
+        progressBadge.textContent = percentage
+            ? `Stage ${completedCount(state)} complete`
+            : 'Stage 0';
+
+        progressBadge.className = percentage
+            ? 'badge success'
+            : 'badge neutral';
+    }
 };
-const attach = (id, event, callback) => document.getElementById(id)?.addEventListener(event, callback);
-const panel = (html) => { const element = document.createElement('div'); element.className = 'programme-stage'; element.innerHTML = html; return element; };
+
+const attach = (id, event, callback) =>
+    document.getElementById(id)?.addEventListener(event, callback);
+
+const panel = (html) => {
+    const element = document.createElement('div');
+
+    element.className = 'programme-stage';
+    element.innerHTML = html;
+
+    return element;
+};
+
 const renderProgramme = (content) => {
-	programmeValue.innerHTML = '';
-	const navigation = document.createElement('div');
-	navigation.className = 'stage-nav';
-	const state = readState();
-	navigation.innerHTML = `<span class="stage-nav-label">Programme stages</span>${stageNames.map((name, index) => { const stage = index + 1; const unlocked = stage === 1 || state[`stage${stage - 1}Complete`]; return `<button type="button" class="stage-link ${state[`stage${stage}Complete`] ? 'complete' : ''}" data-stage="${stage}" ${unlocked ? '' : 'disabled'}>${state[`stage${stage}Complete`] ? `Replay ${name}` : `Stage ${stage}: ${name}`}</button>`; }).join('')}<button id="restartProgrammeButton" type="button" class="secondary">Restart all</button>`;
-	navigation.querySelectorAll('[data-stage]').forEach((button) => button.addEventListener('click', () => openStage(Number(button.dataset.stage))));
-	navigation.querySelector('#restartProgrammeButton').addEventListener('click', restartAll);
-	programmeValue.append(navigation, content);
+    programmeValue.innerHTML = '';
+
+    const navigation = document.createElement('div');
+    navigation.className = 'stage-nav';
+
+    const state = readState();
+
+    navigation.innerHTML = `
+        <span class="stage-nav-label">Programme stages</span>
+
+        ${stageNames
+            .map((name, index) => {
+                const stage = index + 1;
+                const unlocked =
+                    stage === 1 ||
+                    state[`stage${stage - 1}Complete`];
+
+                return `
+                    <button
+                        type="button"
+                        class="stage-link ${
+                            state[`stage${stage}Complete`]
+                                ? 'complete'
+                                : ''
+                        }"
+                        data-stage="${stage}"
+                        ${unlocked ? '' : 'disabled'}
+                    >
+                        ${
+                            state[`stage${stage}Complete`]
+                                ? `Replay ${name}`
+                                : `Stage ${stage}: ${name}`
+                        }
+                    </button>
+                `;
+            })
+            .join('')}
+
+        <button
+            id="restartProgrammeButton"
+            type="button"
+            class="secondary"
+        >
+            Restart all
+        </button>
+    `;
+
+    navigation
+        .querySelectorAll('[data-stage]')
+        .forEach((button) =>
+            button.addEventListener(
+                'click',
+                () => openStage(Number(button.dataset.stage))
+            )
+        );
+
+    navigation
+        .querySelector('#restartProgrammeButton')
+        .addEventListener('click', restartAll);
+
+    programmeValue.append(navigation, content);
 };
 
 const restartAll = () => {
@@ -155,21 +291,104 @@ const replayStage = (stage) => {
 	saveState(state); updateProgress(); openStage(stage);
 };
 const showStageMenu = () => {
-	const state = readState();
-	renderProgramme(panel('<h3>Choose a stage</h3><p>Complete each stage to unlock the next one. Completed stages can be replayed from the programme stages above.</p>'));
-	if (!state.stage1Complete) openStage(1); else if (!state.stage2Complete) openStage(2); else if (!state.stage3Complete) openStage(3); else if (!state.stage4Complete) openStage(4); else if (!state.stage5Complete) openStage(5);
+    const state = readState();
+
+    renderProgramme(
+        panel(
+            '<h3>Choose a stage</h3>' +
+            '<p>Complete each stage to unlock the next one. ' +
+            'Completed stages can be replayed from the programme stages above.</p>'
+        )
+    );
+
+    if (!state.stage1Complete) {
+        openStage(1);
+    } else if (!state.stage2Complete) {
+        openStage(2);
+    } else if (!state.stage3Complete) {
+        openStage(3);
+    } else if (!state.stage4Complete) {
+        openStage(4);
+    } else if (!state.stage5Complete) {
+        openStage(5);
+    }
 };
 
 const renderQuiz = (kind) => {
-	const questions = kind === 'html' ? htmlQuestions : kind === 'css' ? cssQuestions : javascriptQuestions;
-	const current = kind === 'html'
-		? gameManager.htmlGame
-		: kind === 'css'
-			? gameManager.cssGame
-			: gameManager.javascriptGame;
-	const question = questions[current.currentQuestion];
-	const content = panel(`<p class="round-display">Question ${current.currentQuestion + 1} of ${questions.length}</p><div class="quiz-wrap"><div class="quiz-question"><h3>${escapeHtml(question.question)}</h3><div class="answer-list">${question.options.map((option, index) => `<label class="answer-option"><input type="radio" name="${kind}Option" value="${String.fromCharCode(65 + index)}"><span>${escapeHtml(option)}</span></label>`).join('')}</div></div><div class="quiz-actions"><button id="nextQuestionButton" type="button" class="secondary">${current.currentQuestion === questions.length - 1 ? 'Finish quiz' : 'Next question'}</button><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button></div></div>`);
-	renderProgramme(content);
+    const questions =
+        kind === 'html'
+            ? htmlQuestions
+            : kind === 'css'
+                ? cssQuestions
+                : javascriptQuestions;
+
+    const current =
+        kind === 'html'
+            ? gameManager.htmlGame
+            : kind === 'css'
+                ? gameManager.cssGame
+                : gameManager.javascriptGame;
+
+    const question = questions[current.currentQuestion];
+
+    const content = panel(`
+        <p class="round-display">
+            Question ${current.currentQuestion + 1} of ${questions.length}
+        </p>
+
+        <div class="quiz-wrap">
+            <div class="quiz-question">
+                <h3>
+                    ${escapeHtml(question.question)}
+                </h3>
+
+                <div class="answer-list">
+                    ${question.options
+                        .map(
+                            (option, index) => `
+                                <label class="answer-option">
+                                    <input
+                                        type="radio"
+                                        name="${kind}Option"
+                                        value="${String.fromCharCode(65 + index)}"
+                                    >
+                                    <span>
+                                        ${escapeHtml(option)}
+                                    </span>
+                                </label>
+                            `
+                        )
+                        .join('')}
+                </div>
+            </div>
+
+            <div class="quiz-actions">
+                <button
+                    id="nextQuestionButton"
+                    type="button"
+                    class="secondary"
+                >
+                    ${
+                        current.currentQuestion === questions.length - 1
+                            ? 'Finish quiz'
+                            : 'Next question'
+                    }
+                </button>
+
+                <button
+                    id="replayCurrentStage"
+                    type="button"
+                    class="secondary"
+                >
+                    Restart this stage
+                </button>
+            </div>
+        </div>
+    `);
+
+    renderProgramme(content);
+};
+
 	attach('nextQuestionButton', 'click', () => {
     const selected = document.querySelector(`input[name="${kind}Option"]:checked`);
 
@@ -438,18 +657,385 @@ const renderRps = () => {
 	});
 };
 
-const renderChessPicker = () => { const content = panel('<h3>Stage 4: Chess</h3><p>Choose a level, then play as White against the computer.</p><div class="chess-levels"><button type="button" class="chess-level" data-level="beginner"><strong>Beginner</strong><span>Random computer moves</span></button><button type="button" class="chess-level" data-level="mid"><strong>Mid level</strong><span>Computer prefers captures</span></button><button type="button" class="chess-level" data-level="hard"><strong>Hard</strong><span>Computer looks for strong moves</span></button></div><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>'); renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(4)); content.querySelectorAll('.chess-level').forEach((button) => button.addEventListener('click', () => startChess(button.dataset.level))); };
-const startChess = async (level) => { if (!chessModule) chessModule = await import('https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm'); chess = new chessModule.Chess(); selectedSquare = ''; const state = readState(); state.chessLevel = level; state.chessComplete = false; saveState(state); renderChess(level); };
-const renderChess = (level, status = 'Your turn. Choose a white piece.') => { const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']; const squares = chess.board().map((row, rowIndex) => row.map((piece, columnIndex) => { const square = `${files[columnIndex]}${8 - rowIndex}`; const pieceClass = piece ? ` ${piece.color === 'w' ? 'white-piece' : 'black-piece'}` : ''; return `<button type="button" class="chess-square ${(rowIndex + columnIndex) % 2 ? 'dark' : 'light'}${pieceClass}${square === selectedSquare ? ' selected' : ''}" data-square="${square}">${piece ? chessPieces[piece.color][piece.type] : ''}</button>`; }).join('')).join(''); const content = panel(`<h3>Stage 4: Chess <span class="chess-level-label">${level}</span></h3><p class="round-display">You are White. Win the game to complete this stage.</p><div class="chess-board">${squares}</div><p class="result-message" aria-live="polite">${escapeHtml(status)}</p><button id="replayCurrentStage" type="button" class="secondary">Restart this stage</button>`); renderProgramme(content); attach('replayCurrentStage', 'click', () => replayStage(4)); content.querySelectorAll('.chess-square').forEach((button) => button.addEventListener('click', () => selectSquare(button.dataset.square, level))); };
-const computerMove = (level) => { const move = chooseComputerMove(chess.moves({ verbose: true }), level); if (move) chess.move({ from: move.from, to: move.to, promotion: 'q' }); };
-const completeChess = (level) => { const state = readState(); state.stage4Complete = true; state.chessComplete = true; saveState(state); updateProgress(); messageFor('Stage 4 complete! Stage 5 is unlocked.', 'success'); const content = panel(`<h3>Stage 4 complete</h3><p>You won the ${level} chess game.</p><p class="result-message success">Stage 5 JavaScript quiz is now unlocked.</p><div class="quiz-actions"><button id="nextStageButton" type="button" class="primary-button">Continue to Stage 5</button><button id="replayCurrentStage" type="button" class="secondary">Replay this stage</button></div>`); renderProgramme(content); attach('nextStageButton', 'click', () => openStage(5)); attach('replayCurrentStage', 'click', () => replayStage(4)); };
-const selectSquare = (square, level) => {
-	const piece = chess.get(square);
-	if (!selectedSquare) { if (piece?.color === 'w') { selectedSquare = square; renderChess(level, 'Choose a destination square.'); } return; }
-	try { chess.move({ from: selectedSquare, to: square, promotion: 'q' }); selectedSquare = ''; if (chess.isGameOver()) { completeChess(level); return; } computerMove(level); if (chess.isGameOver()) { renderChess(level, 'The computer won this game. Restart the stage to try again.'); return; } renderChess(level); }
-	catch { selectedSquare = piece?.color === 'w' ? square : ''; renderChess(level, selectedSquare ? 'Choose a destination square.' : 'That move is not legal.'); }
+const renderChessPicker = () => {
+    const content = panel(`
+        <h3>Stage 4: Chess</h3>
+
+        <p>
+            Choose a level, then play as White against the computer.
+        </p>
+
+        <div class="chess-levels">
+            <button
+                type="button"
+                class="chess-level"
+                data-level="beginner"
+            >
+                <strong>Beginner</strong>
+                <span>Random computer moves</span>
+            </button>
+
+            <button
+                type="button"
+                class="chess-level"
+                data-level="mid"
+            >
+                <strong>Mid level</strong>
+                <span>Computer prefers captures</span>
+            </button>
+
+            <button
+                type="button"
+                class="chess-level"
+                data-level="hard"
+            >
+                <strong>Hard</strong>
+                <span>Computer looks for strong moves</span>
+            </button>
+        </div>
+
+        <button
+            id="replayCurrentStage"
+            type="button"
+            class="secondary"
+        >
+            Restart this stage
+        </button>
+    `);
+
+    renderProgramme(content);
+
+    attach(
+        'replayCurrentStage',
+        'click',
+        () => replayStage(4)
+    );
+
+    content
+        .querySelectorAll('.chess-level')
+        .forEach((button) =>
+            button.addEventListener(
+                'click',
+                () => startChess(button.dataset.level)
+            )
+        );
 };
-const openStage = (stage) => { const state = readState(); if (stage > 1 && !state[`stage${stage - 1}Complete`]) { messageFor(`Complete Stage ${stage - 1} first to unlock this stage.`, 'error'); return; } if (stage === 1) { quizState.html = { index: 0, answers: [] }; renderQuiz('html'); } if (stage === 2) renderRps(); if (stage === 3) renderQuiz('css'); if (stage === 4) state.chessLevel ? startChess(state.chessLevel) : renderChessPicker(); if (stage === 5) { quizState.javascript = { index: 0, answers: [] }; renderQuiz('javascript'); } };
+
+
+const startChess = async (level) => {
+    if (!chessModule) {
+        chessModule = await import(
+            'https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm'
+        );
+    }
+
+    chess = new chessModule.Chess();
+    selectedSquare = '';
+
+    const state = readState();
+
+    state.chessLevel = level;
+    state.chessComplete = false;
+
+    saveState(state);
+
+    renderChess(level);
+};
+
+
+const renderChess = (
+    level,
+    status = 'Your turn. Choose a white piece.'
+) => {
+    const files = [
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        'f',
+        'g',
+        'h'
+    ];
+
+    const squares = chess
+        .board()
+        .map((row, rowIndex) =>
+            row
+                .map((piece, columnIndex) => {
+                    const square =
+                        `${files[columnIndex]}${8 - rowIndex}`;
+
+                    const pieceClass = piece
+                        ? ` ${
+                            piece.color === 'w'
+                                ? 'white-piece'
+                                : 'black-piece'
+                        }`
+                        : '';
+
+                    return `
+                        <button
+                            type="button"
+                            class="chess-square ${
+                                (rowIndex + columnIndex) % 2
+                                    ? 'dark'
+                                    : 'light'
+                            }${pieceClass}${
+                                square === selectedSquare
+                                    ? ' selected'
+                                    : ''
+                            }"
+                            data-square="${square}"
+                        >
+                            ${
+                                piece
+                                    ? chessPieces[
+                                        piece.color
+                                    ][piece.type]
+                                    : ''
+                            }
+                        </button>
+                    `;
+                })
+                .join('')
+        )
+        .join('');
+
+    const content = panel(`
+        <h3>
+            Stage 4: Chess
+            <span class="chess-level-label">${level}</span>
+        </h3>
+
+        <p class="round-display">
+            You are White. Win the game to complete this stage.
+        </p>
+
+        <div class="chess-board">
+            ${squares}
+        </div>
+
+        <p
+            class="result-message"
+            aria-live="polite"
+        >
+            ${escapeHtml(status)}
+        </p>
+
+        <button
+            id="replayCurrentStage"
+            type="button"
+            class="secondary"
+        >
+            Restart this stage
+        </button>
+    `);
+
+    renderProgramme(content);
+
+    attach(
+        'replayCurrentStage',
+        'click',
+        () => replayStage(4)
+    );
+
+    content
+        .querySelectorAll('.chess-square')
+        .forEach((button) =>
+            button.addEventListener(
+                'click',
+                () =>
+                    selectSquare(
+                        button.dataset.square,
+                        level
+                    )
+            )
+        );
+};
+
+
+const computerMove = (level) => {
+    const move = chooseComputerMove(
+        chess.moves({ verbose: true }),
+        level
+    );
+
+    if (move) {
+        chess.move({
+            from: move.from,
+            to: move.to,
+            promotion: 'q'
+        });
+    }
+};
+
+
+const completeChess = (level) => {
+    const state = readState();
+
+    state.stage4Complete = true;
+    state.chessComplete = true;
+
+    saveState(state);
+    updateProgress();
+
+    messageFor(
+        'Stage 4 complete! Stage 5 is unlocked.',
+        'success'
+    );
+
+    const content = panel(`
+        <h3>Stage 4 complete</h3>
+
+        <p>
+            You won the ${level} chess game.
+        </p>
+
+        <p class="result-message success">
+            Stage 5 JavaScript quiz is now unlocked.
+        </p>
+
+        <div class="quiz-actions">
+            <button
+                id="nextStageButton"
+                type="button"
+                class="primary-button"
+            >
+                Continue to Stage 5
+            </button>
+
+            <button
+                id="replayCurrentStage"
+                type="button"
+                class="secondary"
+            >
+                Replay this stage
+            </button>
+        </div>
+    `);
+
+    renderProgramme(content);
+
+    attach(
+        'nextStageButton',
+        'click',
+        () => openStage(5)
+    );
+
+    attach(
+        'replayCurrentStage',
+        'click',
+        () => replayStage(4)
+    );
+};
+
+
+const selectSquare = (square, level) => {
+    const piece = chess.get(square);
+
+    if (!selectedSquare) {
+        if (piece?.color === 'w') {
+            selectedSquare = square;
+
+            renderChess(
+                level,
+                'Choose a destination square.'
+            );
+        }
+
+        return;
+    }
+
+    try {
+        chess.move({
+            from: selectedSquare,
+            to: square,
+            promotion: 'q'
+        });
+
+        selectedSquare = '';
+
+        if (chess.isGameOver()) {
+            completeChess(level);
+            return;
+        }
+
+        computerMove(level);
+
+        if (chess.isGameOver()) {
+            renderChess(
+                level,
+                'The computer won this game. Restart the stage to try again.'
+            );
+
+            return;
+        }
+
+        renderChess(level);
+    } catch {
+        selectedSquare =
+            piece?.color === 'w'
+                ? square
+                : '';
+
+        renderChess(
+            level,
+            selectedSquare
+                ? 'Choose a destination square.'
+                : 'That move is not legal.'
+        );
+    }
+};
+
+
+const openStage = (stage) => {
+    const state = readState();
+
+    if (
+        stage > 1 &&
+        !state[`stage${stage - 1}Complete`]
+    ) {
+        messageFor(
+            `Complete Stage ${stage - 1} first to unlock this stage.`,
+            'error'
+        );
+
+        return;
+    }
+
+    if (stage === 1) {
+        quizState.html = {
+            index: 0,
+            answers: []
+        };
+
+        renderQuiz('html');
+    }
+
+    if (stage === 2) {
+        renderRps();
+    }
+
+    if (stage === 3) {
+        renderQuiz('css');
+    }
+
+    if (stage === 4) {
+        state.chessLevel
+            ? startChess(state.chessLevel)
+            : renderChessPicker();
+    }
+
+    if (stage === 5) {
+        quizState.javascript = {
+            index: 0,
+            answers: []
+        };
+
+        renderQuiz('javascript');
+    }
+};
 
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -530,7 +1116,183 @@ const gameSessionInit = () => {
 	const questionNumber = document.getElementById('questionNumber');
 	if (!questionNumber) return;
 
-	const stages = [{ name: 'HTML Quiz', questions: [{ question: 'Which tag is used for the largest heading?', options: ['h1', 'p', 'div'], answer: 'h1' }, { question: 'Which tag is used to create a paragraph?', options: ['p', 'h1', 'section'], answer: 'p' }, { question: 'Which tag creates a link?', options: ['a', 'link', 'href'], answer: 'a' }, { question: 'Which tag is used to insert an image?', options: ['img', 'image', 'src'], answer: 'img' }, { question: 'Which element contains the visible webpage content?', options: ['body', 'head', 'title'], answer: 'body' }] }, { name: 'Rock, Paper, Scissors', questions: [{ question: 'Which choice beats Rock?', options: ['Paper', 'Scissors', 'Rock'], answer: 'Paper' }, { question: 'Which choice beats Paper?', options: ['Rock', 'Scissors', 'Paper'], answer: 'Scissors' }, { question: 'Which choice beats Scissors?', options: ['Rock', 'Paper', 'Scissors'], answer: 'Rock' }, { question: 'What happens when both players choose Rock?', options: ['Draw', 'Player 1 wins', 'Player 2 wins'], answer: 'Draw' }, { question: 'What beats Scissors?', options: ['Rock', 'Paper', 'Scissors'], answer: 'Rock' }] }, { name: 'CSS Quiz', questions: [{ question: 'What does CSS control?', options: ['Page styling', 'Database storage', 'Server security'], answer: 'Page styling' }, { question: 'Which property changes text colour?', options: ['color', 'font', 'text-style'], answer: 'color' }, { question: 'Which property changes the background?', options: ['background-color', 'back-color', 'bg'], answer: 'background-color' }, { question: 'Which property controls spacing inside an element?', options: ['padding', 'margin', 'spacing'], answer: 'padding' }, { question: 'Which symbol selects a class in CSS?', options: ['.', '#', '*'], answer: '.' }] }, { name: 'Chess', questions: [{ question: 'Which piece can move in an L-shape?', options: ['Knight', 'Bishop', 'Rook'], answer: 'Knight' }, { question: 'Which piece can move diagonally?', options: ['Bishop', 'Rook', 'King'], answer: 'Bishop' }, { question: 'Which piece is the most important?', options: ['King', 'Queen', 'Knight'], answer: 'King' }, { question: 'How many squares are on a chess board?', options: ['64', '48', '32'], answer: '64' }, { question: 'Which piece moves horizontally and vertically?', options: ['Rook', 'Bishop', 'Knight'], answer: 'Rook' }] }, { name: 'JavaScript Quiz', questions: [{ question: 'Which keyword declares a variable that can be reassigned?', options: ['let', 'const', 'fixed'], answer: 'let' }, { question: 'Which keyword creates a constant?', options: ['const', 'constant', 'fixed'], answer: 'const' }, { question: 'Which symbol is used for strict equality?', options: ['===', '=', '=='], answer: '===' }, { question: 'Which method adds an item to the end of an array?', options: ['push()', 'add()', 'append()'], answer: 'push()' }, { question: 'Which function prints something to the console?', options: ['console.log()', 'print()', 'write()'], answer: 'console.log()' }] }];
+	const stages = [
+    {
+        name: 'HTML Quiz',
+
+        questions: [
+            {
+                question: 'Which tag is used for the largest heading?',
+                options: ['h1', 'p', 'div'],
+                answer: 'h1'
+            },
+            {
+                question: 'Which tag is used to create a paragraph?',
+                options: ['p', 'h1', 'section'],
+                answer: 'p'
+            },
+            {
+                question: 'Which tag creates a link?',
+                options: ['a', 'link', 'href'],
+                answer: 'a'
+            },
+            {
+                question: 'Which tag is used to insert an image?',
+                options: ['img', 'image', 'src'],
+                answer: 'img'
+            },
+            {
+                question: 'Which element contains the visible webpage content?',
+                options: ['body', 'head', 'title'],
+                answer: 'body'
+            }
+        ]
+    },
+
+    {
+        name: 'Rock, Paper, Scissors',
+
+        questions: [
+            {
+                question: 'Which choice beats Rock?',
+                options: ['Paper', 'Scissors', 'Rock'],
+                answer: 'Paper'
+            },
+            {
+                question: 'Which choice beats Paper?',
+                options: ['Rock', 'Scissors', 'Paper'],
+                answer: 'Scissors'
+            },
+            {
+                question: 'Which choice beats Scissors?',
+                options: ['Rock', 'Paper', 'Scissors'],
+                answer: 'Rock'
+            },
+            {
+                question: 'What happens when both players choose Rock?',
+                options: ['Draw', 'Player 1 wins', 'Player 2 wins'],
+                answer: 'Draw'
+            },
+            {
+                question: 'What beats Scissors?',
+                options: ['Rock', 'Paper', 'Scissors'],
+                answer: 'Rock'
+            }
+        ]
+    },
+
+    {
+        name: 'CSS Quiz',
+
+        questions: [
+            {
+                question: 'What does CSS control?',
+                options: [
+                    'Page styling',
+                    'Database storage',
+                    'Server security'
+                ],
+                answer: 'Page styling'
+            },
+            {
+                question: 'Which property changes text colour?',
+                options: ['color', 'font', 'text-style'],
+                answer: 'color'
+            },
+            {
+                question: 'Which property changes the background?',
+                options: [
+                    'background-color',
+                    'back-color',
+                    'bg'
+                ],
+                answer: 'background-color'
+            },
+            {
+                question: 'Which property controls spacing inside an element?',
+                options: [
+                    'padding',
+                    'margin',
+                    'spacing'
+                ],
+                answer: 'padding'
+            },
+            {
+                question: 'Which symbol selects a class in CSS?',
+                options: ['.', '#', '*'],
+                answer: '.'
+            }
+        ]
+    },
+
+    {
+        name: 'Chess',
+
+        questions: [
+            {
+                question: 'Which piece can move in an L-shape?',
+                options: ['Knight', 'Bishop', 'Rook'],
+                answer: 'Knight'
+            },
+            {
+                question: 'Which piece can move diagonally?',
+                options: ['Bishop', 'Rook', 'King'],
+                answer: 'Bishop'
+            },
+            {
+                question: 'Which piece is the most important?',
+                options: ['King', 'Queen', 'Knight'],
+                answer: 'King'
+            },
+            {
+                question: 'How many squares are on a chess board?',
+                options: ['64', '48', '32'],
+                answer: '64'
+            },
+            {
+                question: 'Which piece moves horizontally and vertically?',
+                options: ['Rook', 'Bishop', 'Knight'],
+                answer: 'Rook'
+            }
+        ]
+    },
+
+    {
+        name: 'JavaScript Quiz',
+
+        questions: [
+            {
+                question: 'Which keyword declares a variable that can be reassigned?',
+                options: ['let', 'const', 'fixed'],
+                answer: 'let'
+            },
+            {
+                question: 'Which keyword creates a constant?',
+                options: ['const', 'constant', 'fixed'],
+                answer: 'const'
+            },
+            {
+                question: 'Which symbol is used for strict equality?',
+                options: ['===', '=', '=='],
+                answer: '==='
+            },
+            {
+                question: 'Which method adds an item to the end of an array?',
+                options: ['push()', 'add()', 'append()'],
+                answer: 'push()'
+            },
+            {
+                question: 'Which function prints something to the console?',
+                options: [
+                    'console.log()',
+                    'print()',
+                    'write()'
+                ],
+                answer: 'console.log()'
+            }
+        ]
+    }
+];
 
 	let currentStage = 0;
 	let currentQuestion = 0;
@@ -562,9 +1324,23 @@ const gameSessionInit = () => {
 		if (stageBadge) stageBadge.textContent = `STAGE ${currentStage}`;
 		if (progressStage) progressStage.textContent = `STAGE ${currentStage}`;
 
-		const totalQuestions = stages.reduce((sum, stageItem) => sum + stageItem.questions.length, 0);
-		const completedBefore = stages.slice(0, currentStage).reduce((sum, stageItem) => sum + stageItem.questions.length, 0);
-		const overallCompleted = completedBefore + currentQuestion;
+		const totalQuestions = stages.reduce(
+    (sum, stageItem) =>
+        sum + stageItem.questions.length,
+    0
+);
+
+const completedBefore = stages
+    .slice(0, currentStage)
+    .reduce(
+        (sum, stageItem) =>
+            sum + stageItem.questions.length,
+        0
+    );
+
+const overallCompleted =
+    completedBefore + currentQuestion;
+	
 		const overallProgress = (overallCompleted / totalQuestions) * 100;
 		if (overallBar) overallBar.style.width = `${overallProgress}%`;
 		if (overallPercentage) overallPercentage.textContent = `${Math.round(overallProgress)}%`;

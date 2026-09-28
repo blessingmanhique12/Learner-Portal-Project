@@ -1,39 +1,108 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 	<title>Facilitator Dashboard | LearnerHub</title>
+
 	<link rel="stylesheet" href="facilitator-dashboard.css">
 	<script type="module" src="facilitator-dashboard.js" defer></script>
 </head>
+
 <body>
 	<main class="dashboard-shell">
+
+		<!-- Dashboard header -->
 		<header class="dashboard-header">
 			<div>
 				<p class="eyebrow">LearnerHub</p>
+
 				<h1>Facilitator dashboard</h1>
-				<p id="facilitatorWelcome" class="muted">Checking your Firebase session...</p>
+
+				<p id="facilitatorWelcome" class="muted">
+					Checking your Firebase session...
+				</p>
 			</div>
-			<button id="logoutButton" type="button">Sign out</button>
+
+			<button id="logoutButton" type="button">
+				Sign out
+			</button>
 		</header>
 
+
+		<!-- Facilitator tools -->
 		<section class="dashboard-grid" aria-label="Facilitator tools">
+
 			<article>
 				<h2>Learner support</h2>
-				<p>Review learner requests, support bookings, and progress updates.</p>
+
+				<p>
+					Review learner requests, support
+					bookings, and progress updates.
+				</p>
 			</article>
+
+
 			<article>
 				<h2>Assessments</h2>
-				<p>Monitor outstanding work and identify learners who need follow-up.</p>
+
+				<p>
+					Monitor outstanding work and identify
+					learners who need follow-up.
+				</p>
 			</article>
+
+
 			<article>
 				<h2>Profile role</h2>
-				<p id="roleValue">Loading...</p>
+
+				<p id="roleValue">
+					Loading...
+				</p>
 			</article>
+
 		</section>
 
+
+		<!-- Registered learners -->
+		<section class="learners-section" aria-labelledby="learnersHeading">
+
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Learner management</p>
+
+					<h2 id="learnersHeading">
+						Registered learners
+					</h2>
+
+					<p class="muted">
+						These are the learners registered
+						on LearnerHub.
+					</p>
+				</div>
+
+				<span id="learnerCount" class="learner-count">
+					0 learners
+				</span>
+			</div>
+
+
+			<!-- Learners will be inserted here by JavaScript -->
+			<div id="learnerList" class="learner-list" aria-live="polite">
+				<p class="muted">
+					Loading learners...
+				</p>
+			</div>
+
+		</section>
+
+
+		<!-- Firebase status / errors -->
 		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
+
 	</main>
 </body>
 </html>

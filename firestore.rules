@@ -5,23 +5,37 @@ service cloud.firestore {
 
     match /registrations/{userId} {
 
-      // Allow a signed-in user to create their own profile.
+      // A signed-in user can create their own profile.
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email;
 
-      // Allow a user to read their own profile.
-      allow read: if request.auth != null
-        && request.auth.uid == userId;
 
-      // Allow a user to update their own profile.
+      // A user can always read their own profile.
+      //
+      // A facilitator may also read learner profiles.
+      allow read: if request.auth != null
+        && (
+          request.auth.uid == userId
+          ||
+          (
+            resource.data.role == 'learner'
+            && get(
+              /databases/$(database)/documents/registrations/$(request.auth.uid)
+            ).data.role == 'facilitator'
+          )
+        );
+
+
+      // A user can update their own profile.
       allow update: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email;
 
-      // Do not allow users to delete their profiles.
+
+      // Do not allow users to delete profiles.
       allow delete: if false;
     }
   }
