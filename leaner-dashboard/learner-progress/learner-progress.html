@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LearnerHub Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="learner-progress.css">
 </head>
 <body>
-  <div id="loginScreen" class="login-screen hidden">
+  <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <div class="brand-mark">▣</div>
       <h1>LearnerHub</h1>
-      <p>Sign in to continue your learning journey.</p>
+      <p>Checking your learner account...</p>
       <button class="primary-btn" id="signInBtn">Sign in</button>
     </div>
   </div>
 
-  <div id="app" class="app-shell">
+  <div id="app" class="app-shell hidden">
     <header class="topbar">
       <div class="brand">
         <span class="brand-icon">▣</span>
@@ -33,7 +33,7 @@
 
       <div class="top-actions">
         <button class="logout-btn" id="logoutBtn">↪ Logout</button>
-        <div class="profile-badge">BN</div>
+        <div class="profile-badge">L</div>
       </div>
     </header>
 
@@ -41,8 +41,8 @@
       <section class="hero">
         <div>
           <div class="eyebrow">LEARNER SUPPORT PORTAL</div>
-          <h1>Welcome back, Blessing</h1>
-          <p class="programme">Programme: Software Development</p>
+          <h1>Welcome back</h1>
+          <p class="programme">Programme: Loading...</p>
           <p class="hero-subtitle">Keep working towards your goals and stay on track with your learning.</p>
         </div>
         <button class="preview-btn" id="previewBtn">Preview empty states</button>
@@ -58,10 +58,10 @@
                 <p>Your programme learning journey</p>
               </div>
             </div>
-            <strong id="overallProgressText">60% complete</strong>
+            <strong id="overallProgressText">0% complete</strong>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" id="overallProgressFill" style="width:60%"></div>
+            <div class="progress-fill" id="overallProgressFill" style="width:0%"></div>
           </div>
         </article>
 
@@ -69,7 +69,7 @@
           <article class="card stat-card">
             <div>
               <p>Goals</p>
-              <strong id="goalCount">12</strong>
+              <strong id="goalCount">0</strong>
               <span>Total goals</span>
             </div>
             <span class="circle-icon blue">◎</span>
@@ -77,7 +77,7 @@
           <article class="card stat-card">
             <div>
               <p>Outstanding Tasks</p>
-              <strong id="outstandingCount">7</strong>
+              <strong id="outstandingCount">0</strong>
               <span>Tasks remaining</span>
             </div>
             <span class="circle-icon blue">☷</span>
@@ -85,7 +85,7 @@
           <article class="card stat-card">
             <div>
               <p>Overdue Tasks</p>
-              <strong class="danger" id="overdueCount">2</strong>
+              <strong class="danger" id="overdueCount">0</strong>
               <span>Tasks past due</span>
             </div>
             <span class="circle-icon red">◷</span>
@@ -93,7 +93,7 @@
           <article class="card stat-card">
             <div>
               <p>Support Bookings</p>
-              <strong id="bookingCount">3</strong>
+              <strong id="bookingCount">0</strong>
               <span>Upcoming sessions</span>
             </div>
             <span class="circle-icon teal">▦</span>
@@ -124,9 +124,9 @@
                 </div>
               </div>
               <div class="assessment-progress">
-                <span id="quizProgressLabel">5 of 10 questions complete</span>
+                <span id="quizProgressLabel">0 of 10 questions complete</span>
                 <div class="progress-track">
-                  <div class="progress-fill" id="quizProgressFill" style="width:50%"></div>
+                  <div class="progress-fill" id="quizProgressFill" style="width:0%"></div>
                 </div>
               </div>
               <button class="primary-btn small" id="startQuizBtn">Start Quiz</button>
@@ -151,6 +151,7 @@
                   <h2>My Tasks</h2>
                   <p>Keep your coursework and deadlines on track</p>
                 </div>
+                <button class="primary-btn small" id="addTaskBtn">+ Add Task</button>
               </div>
               <div id="tasksList" class="task-list"></div>
             </article>
@@ -184,6 +185,6 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script type="module" src="learner-progress.js"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-import { auth, db } from "./firebase-config.js";
+import { auth, db } from "../FirebaseAuth/firebase.js";
 
 // ------------------------------
 // Password visibility

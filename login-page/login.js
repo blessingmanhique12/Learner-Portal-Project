@@ -1,28 +1,14 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
-	getAuth,
-	signInWithEmailAndPassword,
-	signOut
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+    signInWithEmailAndPassword,
+    signOut
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
 import {
-	doc,
-	getDoc,
-	getFirestore
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
+    doc,
+    getDoc
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-const firebaseConfig = {
-	apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E',
-	authDomain: 'ron-learn.firebaseapp.com',
-	projectId: 'ron-learn',
-	storageBucket: 'ron-learn.firebasestorage.app',
-	messagingSenderId: '63585372704',
-	appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45',
-	measurementId: 'G-M7RYTEEEVS'
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { auth, db } from "../FirebaseAuth/firebase.js";
 
 const passwordToggle = document.querySelector('[data-toggle-password]');
 
@@ -55,7 +41,7 @@ const setMessage = (text, type = '') => {
 const redirectAfterLogin = (role) => {
 	const target = role === 'facilitator'
 		? '../facilitator-dashboard/facilitator-dashboard.html'
-		: '../leaner-dashboard/learner-dashboard.html';
+		: '../leaner-dashboard/learner-progress/learner-progress.html';
 
 	window.location.href = target;
 };
@@ -79,18 +65,21 @@ if (loginForm && message) {
 		try {
 			const credentials = await signInWithEmailAndPassword(auth, email, password);
 			const user = credentials.user;
-			let profile = null;
-
-			try {
-				const profileSnapshot = await getDoc(doc(db, 'registrations', user.uid));
-				if (profileSnapshot.exists()) {
-					profile = profileSnapshot.data();
-				}
-			} catch (error) {
-				console.warn('Could not read Firestore profile during login.', error);
+			const profileSnapshot = await getDoc(doc(db, 'registrations', user.uid));
+			if (!profileSnapshot.exists()) {
+				await signOut(auth);
+				setMessage('No learner portal profile is associated with this account.', 'error');
+				return;
 			}
 
-			const resolvedRole = profile?.role || selectedRole;
+			const profile = profileSnapshot.data();
+			const resolvedRole = profile.role;
+
+			if (resolvedRole !== 'learner' && resolvedRole !== 'facilitator') {
+				await signOut(auth);
+				setMessage('This account does not have a valid portal role. Please contact your administrator.', 'error');
+				return;
+			}
 
 			if (profile?.role && profile.role !== selectedRole) {
 				await signOut(auth);
@@ -109,13 +98,18 @@ if (loginForm && message) {
 			setMessage('Login successful. Redirecting...', 'success');
 			redirectAfterLogin(resolvedRole);
 		} catch (error) {
+			if (auth.currentUser) {
+				await signOut(auth);
+			}
+
 			console.error('Login failed:', error);
 			const messageMap = {
 				'auth/invalid-email': 'Enter a valid email address.',
 				'auth/user-not-found': 'No account matches that email.',
 				'auth/wrong-password': 'Incorrect password. Please try again.',
 				'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
-				'auth/invalid-credential': 'Your email or password is incorrect.'
+				'auth/invalid-credential': 'Your email or password is incorrect.',
+				'permission-denied': 'Could not verify your account role. Please try again or contact your administrator.'
 			};
 
 			setMessage(messageMap[error.code] || 'Login failed. Please check your credentials and try again.', 'error');

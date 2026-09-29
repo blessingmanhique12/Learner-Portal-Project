@@ -393,6 +393,11 @@ button {
   font-size: 9px;
 }
 
+.goal-row.completed .goal-text {
+  color: #98a5ad;
+  text-decoration: line-through;
+}
+
 .booking-icon {
   width: 22px;
   height: 22px;

@@ -1,4 +1,14 @@
 
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { auth, db } from "../../FirebaseAuth/firebase.js";
+
 /* =========================
    QUIZ QUESTIONS
 ========================= */
@@ -118,6 +128,23 @@ const modal =
 const modalContent =
   document.getElementById("modalContent");
 
+const createInitialState = () => ({
+  goals: [],
+  tasks: [],
+  bookings: [],
+  quiz: { current: 0, score: 0 },
+  games: {
+    html: false,
+    rps: false,
+    css: false,
+    chess: false,
+    javascript: false
+  }
+});
+
+let state = createInitialState();
+let stateStorageKey = null;
+
 
 /* =========================
    SAVE DATA
@@ -126,7 +153,7 @@ const modalContent =
 function saveState() {
 
   localStorage.setItem(
-    "learnerHubState",
+    stateStorageKey,
     JSON.stringify(state)
   );
 
@@ -139,8 +166,9 @@ function saveState() {
 
 function loadState() {
 
-  const saved =
-    localStorage.getItem("learnerHubState");
+  const saved = stateStorageKey
+    ? localStorage.getItem(stateStorageKey)
+    : null;
 
   if (!saved) {
     return;
@@ -151,16 +179,29 @@ function loadState() {
     const parsed =
       JSON.parse(saved);
 
-    Object.assign(
-      state,
-      parsed
-    );
+    const defaults = createInitialState();
+    state = {
+      ...defaults,
+      ...parsed,
+      quiz: { ...defaults.quiz, ...parsed.quiz },
+      games: { ...defaults.games, ...parsed.games },
+      goals: (parsed.goals || []).map((goal) =>
+        typeof goal === "string"
+          ? { title: goal, completed: false }
+          : { ...goal, completed: Boolean(goal.completed) }
+      ),
+      tasks: (parsed.tasks || []).map((task) =>
+        typeof task === "string"
+          ? { title: task, completed: false }
+          : { ...task, completed: Boolean(task.completed) }
+      )
+    };
 
   } catch (error) {
 
-    localStorage.removeItem(
-      "learnerHubState"
-    );
+    if (stateStorageKey) {
+      localStorage.removeItem(stateStorageKey);
+    }
 
   }
 
@@ -243,19 +284,19 @@ function renderGoals() {
 
   list.innerHTML =
     state.goals
-      .map(function (goal) {
+      .map(function (goal, index) {
 
         return `
-          <div class="goal-row">
-
-            <span class="goal-check">
-              ✓
-            </span>
-
-            <span class="goal-text">
-              ${escapeHtml(goal)}
-            </span>
-
+          <div class="goal-row ${goal.completed ? "completed" : ""}">
+            <input
+              class="goal-check"
+              type="checkbox"
+              data-goal-toggle="${index}"
+              aria-label="Mark ${escapeHtml(goal.title)} complete"
+              ${goal.completed ? "checked" : ""}
+            >
+            <span class="goal-text">${escapeHtml(goal.title)}</span>
+            <button class="delete-task" type="button" data-goal-delete="${index}" aria-label="Delete ${escapeHtml(goal.title)}">×</button>
           </div>
         `;
 
@@ -265,11 +306,27 @@ function renderGoals() {
   document.getElementById(
     "goalCount"
   ).textContent =
-    Math.max(
-      12,
-      state.goals.length
-    );
+    state.goals.length;
 
+  list.querySelectorAll("[data-goal-toggle]").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      state.goals[Number(checkbox.dataset.goalToggle)].completed = checkbox.checked;
+      saveState();
+      renderGoals();
+      updateDashboardProgress();
+    });
+  });
+
+  list.querySelectorAll("[data-goal-delete]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.goals.splice(Number(button.dataset.goalDelete), 1);
+      saveState();
+      renderGoals();
+      updateDashboardProgress();
+    });
+  });
+
+  updateDashboardProgress();
 }
 
 
@@ -346,6 +403,98 @@ function updateDashboardProgress() {
   ).textContent =
     overdue;
 
+  const completedGames = Object.values(state.games).filter(Boolean).length;
+  const completedGoals = state.goals.filter((goal) => goal.completed).length;
+  const completedTasks = state.tasks.filter((task) => task.completed).length;
+  const totalItems = 5 + state.goals.length + state.tasks.length;
+  const percentage = totalItems
+    ? Math.round(((completedGames + completedGoals + completedTasks) / totalItems) * 100)
+    : 0;
+
+  document.getElementById("overallProgressText").textContent = `${percentage}% complete`;
+  document.getElementById("overallProgressFill").style.width = `${percentage}%`;
+}
+
+function markGameComplete(stage) {
+  if (!state.games[stage]) {
+    state.games[stage] = true;
+    saveState();
+    updateDashboardProgress();
+  }
+
+}
+
+function renderBookings() {
+  const list = document.getElementById("bookingsList");
+  const count = document.getElementById("bookingCount");
+
+  if (count) {
+    count.textContent = state.bookings.length;
+  }
+
+  if (list) {
+    list.textContent = state.bookings.length
+      ? "Your upcoming bookings will appear here."
+      : "No upcoming support bookings.";
+  }
+}
+
+function renderTasks() {
+  const list = document.getElementById("tasksList");
+
+  if (list) {
+    list.innerHTML = state.tasks.length
+      ? state.tasks.map((task, index) => `
+          <div class="task-row ${task.completed ? "completed" : ""}">
+            <input
+              class="task-check"
+              type="checkbox"
+              data-task-toggle="${index}"
+              aria-label="Mark ${escapeHtml(task.title)} complete"
+              ${task.completed ? "checked" : ""}
+            >
+            <div class="task-main">
+              <span class="task-name">${escapeHtml(task.title)}</span>
+              ${task.dueDate ? `<span class="task-due">Due ${escapeHtml(task.dueDate)}</span>` : ""}
+            </div>
+            <span class="status ${task.completed ? "completed" : "outstanding"}">${task.completed ? "completed" : "outstanding"}</span>
+            <button class="delete-task" type="button" data-task-delete="${index}" aria-label="Delete ${escapeHtml(task.title)}">×</button>
+          </div>
+        `).join("")
+      : "No tasks yet.";
+
+    list.querySelectorAll("[data-task-toggle]").forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        state.tasks[Number(checkbox.dataset.taskToggle)].completed = checkbox.checked;
+        saveState();
+        renderTasks();
+      });
+    });
+
+    list.querySelectorAll("[data-task-delete]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.tasks.splice(Number(button.dataset.taskDelete), 1);
+        saveState();
+        renderTasks();
+      });
+    });
+  }
+
+  updateDashboardProgress();
+}
+
+function showLearnerProfile(user, profile) {
+  const displayName = profile.displayName || profile.username || user.email || "Learner";
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join("");
+
+  document.querySelector(".hero h1").textContent = `Welcome back, ${displayName}`;
+  document.querySelector(".programme").textContent = `Programme: ${profile.programme || "Not specified"}`;
+  document.querySelector(".profile-badge").textContent = initials || "L";
 }
 
 
@@ -436,7 +585,7 @@ document
             }
 
             state.goals.push(
-              value
+              { title: value, completed: false }
             );
 
             saveState();
@@ -450,6 +599,48 @@ document
 
     }
   );
+
+
+/* =========================
+   ADD TASK
+========================= */
+
+document
+  .getElementById("addTaskBtn")
+  .addEventListener("click", function () {
+    openModal(`
+      <h2 class="modal-title">Add a task</h2>
+      <form id="taskForm">
+        <div class="form-group">
+          <label for="taskInput">Task</label>
+          <input id="taskInput" required maxlength="100" placeholder="e.g. Finish the HTML project">
+        </div>
+        <div class="form-group">
+          <label for="taskDueDate">Due date</label>
+          <input id="taskDueDate" type="date">
+        </div>
+        <button class="primary-btn" type="submit">Add task</button>
+      </form>
+    `);
+
+    document.getElementById("taskForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const title = document.getElementById("taskInput").value.trim();
+      if (!title) {
+        return;
+      }
+
+      state.tasks.push({
+        title,
+        dueDate: document.getElementById("taskDueDate").value,
+        completed: false,
+        overdue: false
+      });
+      saveState();
+      renderTasks();
+      closeModal();
+    });
+  });
 
 
 /* =========================
@@ -701,6 +892,8 @@ function startQuiz(stage = "javascript") {
 
                 `;
 
+                markGameComplete(stage);
+
 
                 document
                   .getElementById(
@@ -936,6 +1129,11 @@ function startRps() {
                     ? "You won this round."
                     : "The computer won this round.";
 
+            const gameFinished = userScore >= 3 || computerScore >= 3;
+            if (gameFinished) {
+              markGameComplete("rps");
+            }
+
 
             document.getElementById(
               "rpsResult"
@@ -967,7 +1165,21 @@ function startRps() {
               Computer:
               ${computerScore}
 
+              ${gameFinished ? `
+                <br><br>
+                <strong>${userScore >= 3 ? "Game complete. You won!" : "Game complete."}</strong>
+                <br>
+                <button class="primary-btn" id="rpsDoneBtn" type="button">Done</button>
+              ` : ""}
+
             `;
+
+            if (gameFinished) {
+              document.querySelectorAll(".rps-buttons button").forEach((choiceButton) => {
+                choiceButton.disabled = true;
+              });
+              document.getElementById("rpsDoneBtn").addEventListener("click", closeModal);
+            }
 
           }
         );
@@ -1128,6 +1340,7 @@ function startChess() {
                   fromC
                 ] = selected;
 
+                const capturedPiece = board[r][c];
 
                 board[r][c] =
                   board[fromR][fromC];
@@ -1136,6 +1349,17 @@ function startChess() {
                   "";
 
                 selected = null;
+
+                if (capturedPiece === "♚" || capturedPiece === "♔") {
+                  markGameComplete("chess");
+                  openModal(`
+                    <h2 class="modal-title">Chess stage complete</h2>
+                    <p class="modal-subtitle">You captured the king.</p>
+                    <button class="primary-btn" id="chessDoneBtn" type="button">Done</button>
+                  `);
+                  document.getElementById("chessDoneBtn").addEventListener("click", closeModal);
+                  return;
+                }
 
               }
 
@@ -1208,6 +1432,12 @@ document
 
       state.quiz.score = 0;
 
+      Object.keys(state.games).forEach((stage) => {
+        state.games[stage] = false;
+      });
+
+      state.goals = state.goals.map((goal) => ({ ...goal, completed: false }));
+
 
       state.tasks =
         state.tasks.map(
@@ -1215,7 +1445,8 @@ document
 
             return {
               ...task,
-              completed: false
+              completed: false,
+              overdue: false
             };
 
           }
@@ -1223,6 +1454,8 @@ document
 
 
       saveState();
+
+      renderGoals();
 
       renderTasks();
 
@@ -1321,27 +1554,9 @@ document
   .getElementById("logoutBtn")
   .addEventListener(
     "click",
-    function () {
-
-      const confirmed =
-        confirm(
-          "Are you sure you want to log out?"
-        );
-
-
-      if (!confirmed) {
-        return;
-      }
-
-
-      app.classList.add(
-        "hidden"
-      );
-
-      loginScreen.classList.remove(
-        "hidden"
-      );
-
+    async function () {
+      await signOut(auth);
+      window.location.href = "../../login-page/login.html";
     }
   );
 
@@ -1356,13 +1571,7 @@ document
     "click",
     function () {
 
-      loginScreen.classList.add(
-        "hidden"
-      );
-
-      app.classList.remove(
-        "hidden"
-      );
+      window.location.href = "../../login-page/login.html";
 
     }
   );
@@ -1372,10 +1581,44 @@ document
    START APPLICATION
 ========================= */
 
-loadState();
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "../../login-page/login.html";
+    return;
+  }
 
-renderGoals();
+  try {
+    const profileSnapshot = await getDoc(doc(db, "registrations", user.uid));
 
-renderBookings();
+    if (!profileSnapshot.exists()) {
+      await signOut(auth);
+      window.location.href = "../../login-page/login.html";
+      return;
+    }
 
-renderTasks();
+    const profile = profileSnapshot.data();
+    if (profile.role === "facilitator") {
+      window.location.href = "../../facilitator-dashboard/facilitator-dashboard.html";
+      return;
+    }
+    if (profile.role !== "learner") {
+      await signOut(auth);
+      window.location.href = "../../login-page/login.html";
+      return;
+    }
+
+    stateStorageKey = `learnerHubState:${user.uid}`;
+    state = createInitialState();
+    showLearnerProfile(user, profile);
+    loadState();
+    renderGoals();
+    renderBookings();
+    renderTasks();
+    loginScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+  } catch (error) {
+    console.error("Could not load learner profile:", error);
+    await signOut(auth);
+    window.location.href = "../../login-page/login.html";
+  }
+});
