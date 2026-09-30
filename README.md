@@ -94,7 +94,7 @@ How to Run the Project
 
 Publish the App Online
 
-The project is configured for Firebase Hosting and uses the existing Firebase project `ron-learn`.
+The project is configured for Firebase Hosting and uses the existing Firebase project `studyflow-f62b2`.
 
 1. Install the Firebase CLI: `npm install -g firebase-tools`.
 2. Sign in: `firebase login`.
