@@ -2,10 +2,7 @@ registrations/{uid}
   uid: string
   displayName: string
   email: string
-  username: string
-  phone: string
   role: "learner" | "facilitator"
-  programme: string
   createdAt: timestamp
 
 tasks/{taskId}

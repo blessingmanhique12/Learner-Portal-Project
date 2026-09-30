@@ -1,42 +1,18 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
+import {
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 import {
-        getAuth,
-        onAuthStateChanged,
-        signOut
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    where
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-import {
-        collection,
-        doc,
-        getDoc,
-        getDocs,
-        getFirestore,
-        query,
-        where
-} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
-
-
-/*
- * Firebase configuration
- */
-const firebaseConfig = {
-        apiKey: 'AIzaSyAmmMxhDa9LLme7uP1y-X2kMJHr3t6tT5E',
-        authDomain: 'ron-learn.firebaseapp.com',
-        projectId: 'ron-learn',
-        storageBucket: 'ron-learn.firebasestorage.app',
-        messagingSenderId: '63585372704',
-        appId: '1:63585372704:web:b75d9cc803c9b15e0c8a45',
-        measurementId: 'G-M7RYTEEEVS'
-};
-
-
-/*
- * Initialise Firebase
- */
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { auth, db } from "../FirebaseAuth/firebase.js";
 
 
 /*

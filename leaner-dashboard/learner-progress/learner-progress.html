@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LearnerHub Dashboard</title>
+  <link rel="stylesheet" href="learner-progress.css">
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-mark">▣</div>
+      <h1>LearnerHub</h1>
+      <p>Checking your learner account...</p>
+      <button class="primary-btn" id="signInBtn">Sign in</button>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon">▣</span>
+        <span>LearnerHub</span>
+      </div>
+
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-section="home">Home</button>
+        <button class="nav-link" data-section="goals">My Goals</button>
+        <button class="nav-link" data-section="tasks">Tasks</button>
+        <button class="nav-link" data-section="support">Support</button>
+        <button class="nav-link" data-section="progress">Progress</button>
+      </nav>
+
+      <div class="top-actions">
+        <button class="logout-btn" id="logoutBtn">↪ Logout</button>
+        <div class="profile-badge">L</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">LEARNER SUPPORT PORTAL</div>
+          <h1>Welcome back</h1>
+          <p class="programme">Programme: Loading...</p>
+          <p class="hero-subtitle">Keep working towards your goals and stay on track with your learning.</p>
+        </div>
+        <button class="preview-btn" id="previewBtn">Preview empty states</button>
+      </section>
+
+      <section class="dashboard-content">
+        <article class="card progress-card" id="progressCard">
+          <div class="progress-heading">
+            <div class="title-with-icon">
+              <span class="circle-icon blue">↗</span>
+              <div>
+                <h2>Overall Progress</h2>
+                <p>Your programme learning journey</p>
+              </div>
+            </div>
+            <strong id="overallProgressText">0% complete</strong>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="overallProgressFill" style="width:0%"></div>
+          </div>
+        </article>
+
+        <section class="stats-grid">
+          <article class="card stat-card">
+            <div>
+              <p>Goals</p>
+              <strong id="goalCount">0</strong>
+              <span>Total goals</span>
+            </div>
+            <span class="circle-icon blue">◎</span>
+          </article>
+          <article class="card stat-card">
+            <div>
+              <p>Outstanding Tasks</p>
+              <strong id="outstandingCount">0</strong>
+              <span>Tasks remaining</span>
+            </div>
+            <span class="circle-icon blue">☷</span>
+          </article>
+          <article class="card stat-card">
+            <div>
+              <p>Overdue Tasks</p>
+              <strong class="danger" id="overdueCount">0</strong>
+              <span>Tasks past due</span>
+            </div>
+            <span class="circle-icon red">◷</span>
+          </article>
+          <article class="card stat-card">
+            <div>
+              <p>Support Bookings</p>
+              <strong id="bookingCount">0</strong>
+              <span>Upcoming sessions</span>
+            </div>
+            <span class="circle-icon teal">▦</span>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <div class="column">
+            <article class="card section-card" id="goalsSection">
+              <div class="card-header">
+                <div>
+                  <h2>My Goals</h2>
+                  <p>Focus areas for your learning journey</p>
+                </div>
+                <button class="primary-btn small" id="addGoalBtn">+ Add Goal</button>
+              </div>
+              <div id="goalsList" class="list"></div>
+            </article>
+
+            <article class="card assessment-card">
+              <div class="card-header">
+                <div class="title-with-icon">
+                  <span class="circle-icon blue">⌁</span>
+                  <div>
+                    <h2>Software Development Skills Assessment</h2>
+                    <p>Test your understanding of the skills covered in your programme</p>
+                  </div>
+                </div>
+              </div>
+              <div class="assessment-progress">
+                <span id="quizProgressLabel">0 of 10 questions complete</span>
+                <div class="progress-track">
+                  <div class="progress-fill" id="quizProgressFill" style="width:0%"></div>
+                </div>
+              </div>
+              <button class="primary-btn small" id="startQuizBtn">Start Quiz</button>
+            </article>
+          </div>
+
+          <div class="column">
+            <article class="card section-card" id="supportSection">
+              <div class="card-header">
+                <div>
+                  <h2>My Support Bookings</h2>
+                  <p>Upcoming sessions with your support team</p>
+                </div>
+                <button class="primary-btn small" id="bookSessionBtn">Book New Session</button>
+              </div>
+              <div id="bookingsList" class="list"></div>
+            </article>
+
+            <article class="card section-card" id="tasksSection">
+              <div class="card-header">
+                <div>
+                  <h2>My Tasks</h2>
+                  <p>Keep your coursework and deadlines on track</p>
+                </div>
+                <button class="primary-btn small" id="addTaskBtn">+ Add Task</button>
+              </div>
+              <div id="tasksList" class="task-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="card programme-card" id="progressSection">
+          <div class="card-header">
+            <div>
+              <h2>Programme Stages</h2>
+              <p>Continue your Software Development learning journey</p>
+            </div>
+            <button class="secondary-btn small" id="restartAllBtn">Restart all</button>
+          </div>
+          <div class="stage-grid">
+            <button class="stage-btn" data-stage="html">Stage 1: HTML Quiz</button>
+            <button class="stage-btn" data-stage="rps">Stage 2: Rock, Paper, Scissors</button>
+            <button class="stage-btn" data-stage="css">Stage 3: CSS Quiz</button>
+            <button class="stage-btn" data-stage="chess">Stage 4: Chess</button>
+            <button class="stage-btn" data-stage="javascript">Stage 5: JavaScript Quiz</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal hidden" id="modal">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script type="module" src="learner-progress.js"></script>
+</body>
+</html>
