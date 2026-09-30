@@ -10,18 +10,33 @@ import {
 
 import { auth, db } from "../FirebaseAuth/firebase.js";
 
-const passwordToggle = document.querySelector('[data-toggle-password]');
+class LoginPage {
+	constructor() {
+		this.form = document.getElementById('loginPanel');
+		this.message = document.getElementById('message');
+		this.resendButton = document.getElementById('resendVerification');
+		this.submitButton = document.getElementById('loginButton');
+	}
 
-if (passwordToggle) {
-	const passwordInput = document.getElementById(passwordToggle.dataset.togglePassword);
+	init() {
+		this.bindPasswordToggle();
+		this.form?.addEventListener('submit', (event) => this.handleSubmit(event));
+		this.resendButton?.addEventListener('click', () => this.resendVerification());
+	}
 
-	if (passwordInput) {
-		passwordToggle.addEventListener('click', () => {
-			const isVisible = passwordInput.type === 'text';
+	bindPasswordToggle() {
+		const toggle = document.querySelector('[data-toggle-password]');
+		const input = toggle && document.getElementById(toggle.dataset.togglePassword);
 
-			passwordInput.type = isVisible ? 'password' : 'text';
-			passwordToggle.setAttribute('aria-pressed', String(!isVisible));
-			passwordToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+		if (!toggle || !input) {
+			return;
+		}
+
+		toggle.addEventListener('click', () => {
+			const visible = input.type === 'text';
+			input.type = visible ? 'password' : 'text';
+			toggle.setAttribute('aria-pressed', String(!visible));
+			toggle.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
 		});
 	}
 }
@@ -49,18 +64,15 @@ const redirectAfterLogin = (role) => {
 if (loginForm && message) {
 	loginForm.addEventListener('submit', async (event) => {
 		event.preventDefault();
-
-		if (!loginForm.checkValidity()) {
-			setMessage('Enter a valid email address and password.', 'error');
-			loginForm.reportValidity();
+		if (!this.form.checkValidity()) {
+			this.form.reportValidity();
 			return;
 		}
 
-		const email = document.getElementById('loginEmail')?.value.trim();
-		const password = document.getElementById('loginPassword')?.value;
-		const selectedRole = document.getElementById('loginRole')?.value || 'learner';
-
-		setMessage('Verifying your login details...', 'success');
+		const { email, password } = this.getCredentials();
+		this.setMessage('Verifying your login details...', 'success');
+		this.resendButton.hidden = true;
+		this.submitButton.disabled = true;
 
 		try {
 			const credentials = await signInWithEmailAndPassword(auth, email, password);
@@ -90,20 +102,23 @@ if (loginForm && message) {
 			localStorage.setItem('learnerHubUser', JSON.stringify({
 				uid: user.uid,
 				email: user.email,
-				displayName: user.displayName || profile?.username || user.email,
-				role: resolvedRole,
-				programme: profile?.programme || ''
+				displayName: user.displayName || profile.username || user.email,
+				role: profile.role,
+				programme: profile.programme || ''
 			}));
 
-			setMessage('Login successful. Redirecting...', 'success');
-			redirectAfterLogin(resolvedRole);
+			this.setMessage('Login successful. Redirecting...', 'success');
+			const target = profile.role === 'facilitator'
+				? '../facilitator-dashboard/facilitator-dashboard.html'
+				: '../leaner-dashboard/learner-progress/learner-progress.html';
+			window.location.href = target;
 		} catch (error) {
 			if (auth.currentUser) {
 				await signOut(auth);
 			}
 
 			console.error('Login failed:', error);
-			const messageMap = {
+			const messages = {
 				'auth/invalid-email': 'Enter a valid email address.',
 				'auth/user-not-found': 'No account matches that email.',
 				'auth/wrong-password': 'Incorrect password. Please try again.',
@@ -111,8 +126,42 @@ if (loginForm && message) {
 				'auth/invalid-credential': 'Your email or password is incorrect.',
 				'permission-denied': 'Could not verify your account role. Please try again or contact your administrator.'
 			};
-
-			setMessage(messageMap[error.code] || 'Login failed. Please check your credentials and try again.', 'error');
+			this.setMessage(messages[error.code] || 'Login failed. Please check your credentials and try again.', 'error');
+		} finally {
+			this.submitButton.disabled = false;
 		}
-	});
+	}
+
+	async resendVerification() {
+		const { email, password } = this.getCredentials();
+		if (!email || !password) {
+			this.setMessage('Enter your email and password to request a new verification link.', 'error');
+			return;
+		}
+
+		this.resendButton.disabled = true;
+		this.setMessage('Sending verification email...', 'success');
+		try {
+			const { user } = await signInWithEmailAndPassword(auth, email, password);
+			if (user.emailVerified) {
+				this.setMessage('This email is already verified. Sign in to continue.', 'success');
+				this.resendButton.hidden = true;
+				return;
+			}
+
+			await sendEmailVerification(user);
+			this.setMessage('A new verification link has been sent. Check your inbox and spam folder.', 'success');
+		} catch (error) {
+			this.setMessage(error.code === 'auth/too-many-requests'
+				? 'Too many requests. Wait a moment before trying again.'
+				: 'Could not send a verification link. Check your details and try again.', 'error');
+		} finally {
+			if (auth.currentUser) {
+				await signOut(auth);
+			}
+			this.resendButton.disabled = false;
+		}
+	}
 }
+
+new LoginPage().init();
