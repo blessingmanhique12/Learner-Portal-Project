@@ -1,4 +1,5 @@
-users/{uid}
+registrations/{uid}
+  uid: string
   displayName: string
   email: string
   role: "learner" | "facilitator"

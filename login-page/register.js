@@ -200,7 +200,7 @@ class RegistrationPage {
 			if (auth.currentUser) await signOut(auth);
 			console.error("Could not recover the existing account profile:", error);
 			const message = error.code === "auth/invalid-credential"
-				? "This email already has an account. Check its password or use Forgot password to recover access."
+				? "Firebase Authentication has an account for this email, but that password did not work. We could not check its Firestore profile in registrations. Use Forgot password, then return here and submit your details again with the new password to complete a missing profile."
 				: error.code === "permission-denied"
 					? "Your account exists, but Firestore blocked profile creation. Check the registrations security rules."
 					: "This email already has an account, but its profile could not be repaired. Sign in or contact support.";
