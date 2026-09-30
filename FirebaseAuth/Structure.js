@@ -1,7 +1,11 @@
-users/{uid}
+registrations/{uid}
+  uid: string
   displayName: string
   email: string
-  role: "learner" | "assessor"
+  username: string
+  phone: string
+  role: "learner" | "facilitator"
+  programme: string
   createdAt: timestamp
 
 tasks/{taskId}
