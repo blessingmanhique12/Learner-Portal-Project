@@ -3,6 +3,7 @@ import {
     createUserWithEmailAndPassword,
     deleteUser,
     sendEmailVerification,
+	sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signOut,
     updateProfile
@@ -25,6 +26,7 @@ class RegistrationPage {
 		this.loader = document.getElementById("registerLoader");
 		this.submitButton = document.getElementById("registerButton");
 		this.programmeInput = document.getElementById("registerProgramme");
+		this.registrationDraftKey = "learnerHubRegistrationDraft";
 		this.user = null;
 	}
 
@@ -32,7 +34,40 @@ class RegistrationPage {
 		this.bindPasswordToggle();
 		this.bindProgrammeRequirement();
 		this.bindUsernameSuggestion();
+		this.restoreRegistrationDraft();
 		this.form?.addEventListener("submit", (event) => this.handleSubmit(event));
+	}
+
+	restoreRegistrationDraft() {
+		try {
+			const savedDraft = localStorage.getItem(this.registrationDraftKey);
+			if (!savedDraft) return;
+
+			const { data, expiresAt } = JSON.parse(savedDraft);
+			if (!data || expiresAt <= Date.now()) {
+				localStorage.removeItem(this.registrationDraftKey);
+				return;
+			}
+
+			document.getElementById("registerEmail").value = data.email || "";
+			document.getElementById("registerUsername").value = data.username || "";
+			document.getElementById("registerPhone").value = data.phone || "";
+			document.getElementById("registerRole").value = data.role || "learner";
+			this.programmeInput.value = data.programme || "";
+			this.updateProgrammeRequirement();
+			this.setMessage("Your registration details were restored. Enter your new password and submit to finish setting up your profile.", "success");
+		} catch (error) {
+			localStorage.removeItem(this.registrationDraftKey);
+			console.warn("Could not restore the registration draft.", error);
+		}
+	}
+
+	saveRegistrationDraft(data) {
+		const { email, username, phone, role, programme } = data;
+		localStorage.setItem(this.registrationDraftKey, JSON.stringify({
+			data: { email, username, phone, role, programme },
+			expiresAt: Date.now() + 30 * 60 * 1000
+		}));
 	}
 
 	bindPasswordToggle() {
@@ -197,11 +232,27 @@ class RegistrationPage {
 				? "Your existing account profile is now complete. You can sign in."
 				: "Your account profile is now complete. We sent a verification link; verify your email before signing in.");
 		} catch (error) {
+			if (["auth/invalid-credential", "auth/wrong-password"].includes(error.code)) {
+				this.saveRegistrationDraft(data);
+				try {
+					await sendPasswordResetEmail(auth, data.email);
+					this.setMessage(
+						"Firebase Authentication in project studyflow-f62b2 reports that this email is already registered. This is separate from Firestore, so the registrations profile may still be missing. We sent a secure password-reset link. Reset your password, return here, enter the new password, and submit to complete your profile. Your non-password details are saved on this device for 30 minutes. If you believe this email is not listed under Authentication > Users in project studyflow-f62b2, verify that you are checking the same Firebase project and using the latest deployed registration page.",
+						"success"
+					);
+				} catch (resetError) {
+					console.error("Could not send the password reset email:", resetError);
+					const resetMessage = resetError.code === "auth/too-many-requests"
+						? "Too many password-reset requests. Wait a while, then use Forgot password to continue account recovery. Your registration details are saved on this device for 30 minutes."
+						: "We could not send a password-reset email. Use Forgot password to reset your password, then return here to complete your profile. Your registration details are saved on this device for 30 minutes.";
+					this.setMessage(resetMessage, "error");
+				}
+				return;
+			}
+
 			if (auth.currentUser) await signOut(auth);
 			console.error("Could not recover the existing account profile:", error);
-			const message = error.code === "auth/invalid-credential"
-				? "Firebase Authentication has an account for this email, but that password did not work. We could not check its Firestore profile in registrations. Use Forgot password, then return here and submit your details again with the new password to complete a missing profile."
-				: error.code === "permission-denied"
+			const message = error.code === "permission-denied"
 					? "Your account exists, but Firestore blocked profile creation. Check the registrations security rules."
 					: "This email already has an account, but its profile could not be repaired. Sign in or contact support.";
 			this.setMessage(message, "error");
@@ -209,6 +260,7 @@ class RegistrationPage {
 	}
 
 	finishSuccessfully(message) {
+		localStorage.removeItem(this.registrationDraftKey);
 		this.form.reset();
 		this.updateProgrammeRequirement();
 		this.setMessage(message, "success");

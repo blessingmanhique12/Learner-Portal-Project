@@ -7,21 +7,15 @@ import {
   doc,
   getDoc,
   collection,
-  onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
-  updateDoc,
-  where,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { auth, db } from "../../FirebaseAuth/firebase.js";
-import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
-import { ChessGame } from "../../game/classes/ChessGame.js";
-import { ProgressManager } from "../../game/classes/ProgressManager.js";
-import { QuizGame } from "../../game/classes/QuizGame.js";
-import { RPSGame } from "../../game/classes/RPSGame.js";
-import { chessLevels, chessPieces, chooseComputerMove } from "../../game/stage4-chess/stage4-chess.js";
+import { ChessGame } from "../classes/ChessGame.js";
+import { ProgressManager } from "../classes/ProgressManager.js";
+import { QuizGame } from "../classes/QuizGame.js";
+import { RPSGame } from "../classes/RPSGame.js";
 
 /* =========================
    QUIZ QUESTIONS
@@ -161,7 +155,6 @@ let state = createInitialState();
 let stateStorageKey = null;
 let progressManager = new ProgressManager();
 let progressRepository = null;
-let unsubscribeBookings = null;
 
 const stageKeys = ["html", "rps", "css", "chess", "javascript"];
 const PASS_MARK = 60;
@@ -618,89 +611,15 @@ function renderBookings() {
   const list = document.getElementById("bookingsList");
   const count = document.getElementById("bookingCount");
 
-  if (!list) return;
-
-  if (count) count.textContent = state.bookings.length;
-  list.replaceChildren();
-
-  if (state.bookings.length === 0) {
-    list.textContent = "No support sessions have been booked for you yet.";
-    return;
+  if (count) {
+    count.textContent = state.bookings.length;
   }
 
-  [...state.bookings]
-    .sort((first, second) => (first.preferredDate || "").localeCompare(second.preferredDate || ""))
-    .forEach((booking) => {
-      const item = document.createElement("div");
-      item.className = "booking-item";
-
-      const heading = document.createElement("div");
-      heading.className = "booking-item-heading";
-      const topic = document.createElement("strong");
-      topic.textContent = booking.topic || "Support session";
-      const status = document.createElement("span");
-      status.className = `booking-status ${String(booking.status || "pending").toLowerCase()}`;
-      status.textContent = booking.status || "pending";
-      heading.append(topic, status);
-
-      const date = document.createElement("p");
-      date.textContent = `Preferred date: ${booking.preferredDate || "To be arranged"}`;
-      const notes = document.createElement("p");
-      notes.className = "booking-notes";
-      notes.textContent = booking.notes || "No additional notes.";
-
-      item.append(heading, date, notes);
-      if (booking.status !== "completed") {
-        const completeButton = document.createElement("button");
-        completeButton.type = "button";
-        completeButton.className = "booking-complete-button";
-        completeButton.textContent = "Mark session complete";
-        completeButton.addEventListener("click", () => completeLearnerBooking(booking, completeButton));
-        item.appendChild(completeButton);
-      }
-      list.appendChild(item);
-    });
-}
-
-async function completeLearnerBooking(booking, button) {
-  button.disabled = true;
-  try {
-    await updateDoc(doc(db, "bookings", booking.id), {
-      status: "completed",
-      completedAt: serverTimestamp(),
-      completedBy: auth.currentUser.uid
-    });
-  } catch (error) {
-    console.error("Could not complete learner support session:", error);
-    button.disabled = false;
-    openModal(`
-      <h2 class="modal-title">Session could not be completed</h2>
-      <p class="modal-subtitle">Check your connection and try again. If this continues, contact your facilitator.</p>
-      <button class="primary-btn" id="bookingErrorCloseBtn" type="button">Close</button>
-    `);
-    document.getElementById("bookingErrorCloseBtn").addEventListener("click", closeModal);
+  if (list) {
+    list.textContent = state.bookings.length
+      ? "Your upcoming bookings will appear here."
+      : "No upcoming support bookings.";
   }
-}
-
-function subscribeToBookings(userId) {
-  if (unsubscribeBookings) unsubscribeBookings();
-
-  const learnerBookingsQuery = query(
-    collection(db, "bookings"),
-    where("userId", "==", userId)
-  );
-
-  unsubscribeBookings = onSnapshot(learnerBookingsQuery, (snapshot) => {
-    state.bookings = snapshot.docs.map((bookingDocument) => ({
-      id: bookingDocument.id,
-      ...bookingDocument.data()
-    }));
-    renderBookings();
-  }, (error) => {
-    console.error("Could not load learner support bookings:", error);
-    const list = document.getElementById("bookingsList");
-    if (list) list.textContent = "Support sessions could not be loaded. Please try again later.";
-  });
 }
 
 function renderTasks() {
@@ -1162,27 +1081,16 @@ function startRps() {
 
   const game = new RPSGame(3, 5);
   const choices = ["Rock", "Paper", "Scissors"];
-  const choiceImages = {
-    rock: "../../game/stage2-rps/rock-emoji.png",
-    paper: "../../game/stage2-rps/paper-emoji.png",
-    scissors: "../../game/stage2-rps/scissors-emoji.png"
-  };
 
   openModal(`
     <h2 class="modal-title">Rock, Paper, Scissors</h2>
     <p class="modal-subtitle">First to three wins, or finish five rounds.</p>
     <div class="rps-buttons">
-      ${choices.map((choice) => `
-        <button class="rps-choice-button" type="button" data-choice="${choice}" aria-label="Choose ${choice}">
-          <img src="${choiceImages[choice.toLowerCase()]}" alt="">
-          <span>${choice}</span>
-        </button>
-      `).join("")}
+      <button type="button" data-choice="Rock">Rock</button>
+      <button type="button" data-choice="Paper">Paper</button>
+      <button type="button" data-choice="Scissors">Scissors</button>
     </div>
-    <div class="rps-result" id="rpsResult">
-      <p>Choose your hand to play the first round.</p>
-      <strong>Your score: 0 | Computer: 0</strong>
-    </div>
+    <div class="rps-result" id="rpsResult">Your score: 0 | Computer: 0</div>
   `);
 
   document.querySelectorAll(".rps-buttons button").forEach((button) => {
@@ -1199,21 +1107,9 @@ function startRps() {
       const resultElement = document.getElementById("rpsResult");
 
       resultElement.innerHTML = `
-        <div class="rps-reveal">
-          <div class="rps-hand-choice">
-            <span>You</span>
-            <img src="${choiceImages[user.toLowerCase()]}" alt="${user}">
-            <strong>${user}</strong>
-          </div>
-          <strong class="rps-versus" aria-label="versus">VS</strong>
-          <div class="rps-hand-choice">
-            <span>Computer</span>
-            <img src="${choiceImages[computer.toLowerCase()]}" alt="${computer}">
-            <strong>${computer}</strong>
-          </div>
-        </div>
-        <p>${result}</p>
-        <strong>Your score: ${game.playerWins} | Computer: ${game.computerWins}</strong>
+        <strong>You:</strong> ${user} &nbsp; <strong>Computer:</strong> ${computer}<br>
+        ${result}<br><br>
+        Your score: ${game.playerWins} | Computer: ${game.computerWins}
         ${gameFinished ? "<br><br><strong>Game complete.</strong><br>Saving score..." : ""}
       `;
 
@@ -1262,197 +1158,243 @@ function startChess() {
     return;
   }
 
-  openModal(`
-    <h2 class="modal-title">Chess</h2>
-    <p class="modal-subtitle">Choose your difficulty. You play White against the computer.</p>
-    <div class="chess-level-options">
-      ${chessLevels.map(({ value, description }) => `
-        <button class="chess-level-option" type="button" data-chess-level="${value}">
-          <strong>${value === "mid" ? "Intermediate" : value[0].toUpperCase() + value.slice(1)}</strong>
-          <span>${escapeHtml(description)}</span>
-        </button>
-      `).join("")}
-    </div>
-  `);
+  const game = new ChessGame();
 
-  modalContent.querySelectorAll("[data-chess-level]").forEach((button) => {
-    button.addEventListener("click", () => startChessMatch(button.dataset.chessLevel));
-  });
-}
+  const initial = [
 
-function startChessMatch(level) {
-  const game = new ChessGame(level);
-  const chess = new Chess();
-  const levelName = chessLevels.find((item) => item.value === level)?.value || "beginner";
-  let selectedSquare = "";
-  let computerThinking = false;
-  let resultSaved = false;
+    ["♜","♞","♝","♛","♚","♝","♞","♜"],
 
-  function renderBoard(statusMessage = "") {
-    const board = chess.board();
-    const legalTargets = selectedSquare
-      ? chess.moves({ square: selectedSquare, verbose: true }).map((move) => move.to)
-      : [];
-    const status = statusMessage || (computerThinking
-      ? "Computer is thinking..."
-      : chess.isCheck()
-        ? "Check. Your move."
-        : "Your move. Select a white piece.");
+    ["♟","♟","♟","♟","♟","♟","♟","♟"],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["♙","♙","♙","♙","♙","♙","♙","♙"],
+
+    ["♖","♘","♗","♕","♔","♗","♘","♖"]
+
+  ];
+
+
+  let board =
+    initial.map(
+      function (row) {
+
+        return [...row];
+
+      }
+    );
+
+
+  let selected = null;
+
+
+  function renderBoard() {
 
     modalContent.innerHTML = `
-      <h2 class="modal-title">Chess: ${levelName === "mid" ? "Intermediate" : levelName[0].toUpperCase() + levelName.slice(1)}</h2>
-      <p class="modal-subtitle">You are White. The computer is Black.</p>
-      <p class="chess-status" id="chessStatus" aria-live="polite">${escapeHtml(status)}</p>
-      <div class="chess-board" role="grid" aria-label="Chess board">
-        ${board.flatMap((row, rowIndex) => row.map((piece, columnIndex) => {
-          const squareName = `${"abcdefgh"[columnIndex]}${8 - rowIndex}`;
-          const isSelected = selectedSquare === squareName;
-          const isLegalTarget = legalTargets.includes(squareName);
-          const pieceName = piece
-            ? `${piece.color === "w" ? "White" : "Black"} ${piece.type}`
-            : "empty";
-          const classes = [
-            "chess-square",
-            (rowIndex + columnIndex) % 2 ? "dark" : "light",
-            isSelected ? "selected" : "",
-            isLegalTarget ? "legal-target" : "",
-            piece ? "has-piece" : ""
-          ].filter(Boolean).join(" ");
 
-          return `
-            <button class="${classes}" type="button" role="gridcell"
-              data-square="${squareName}" aria-label="${squareName}, ${pieceName}"
-              ${computerThinking || chess.isGameOver() ? "disabled" : ""}>
-              ${piece ? chessPieces[piece.color][piece.type] : ""}
-            </button>
-          `;
-        })).join("")}
+      <h2 class="modal-title">
+        Chess
+      </h2>
+
+      <p class="modal-subtitle">
+        Select a piece, then select a square to move it.
+        This is a basic interactive board.
+      </p>
+
+      <div class="chess-board">
+
+        ${board
+          .flatMap(
+            function (row, r) {
+
+              return row.map(
+                function (piece, c) {
+
+                  return `
+
+                    <button
+                      class="chess-square
+                        ${
+                          (r + c) % 2
+                            ? "dark"
+                            : "light"
+                        }
+                        ${
+                          selected &&
+                          selected[0] === r &&
+                          selected[1] === c
+                            ? "selected"
+                            : ""
+                        }"
+
+                      data-r="${r}"
+                      data-c="${c}">
+
+                      ${piece}
+
+                    </button>
+
+                  `;
+
+                }
+              );
+
+            }
+          )
+          .join("")}
+
       </div>
-      <button class="secondary-btn" id="restartChessMatch" type="button">Restart match</button>
+
+      <button
+        class="secondary-btn"
+        id="resetChess">
+
+        Reset board
+
+      </button>
+
     `;
 
-    modalContent.querySelectorAll("[data-square]").forEach((squareButton) => {
-      squareButton.addEventListener("click", () => handlePlayerMove(squareButton.dataset.square));
-    });
-    document.getElementById("restartChessMatch").addEventListener("click", () => {
-      chess.reset();
-      game.reset();
-      selectedSquare = "";
-      computerThinking = false;
-      resultSaved = false;
-      renderBoard();
-    });
+
+    document
+      .querySelectorAll(
+        ".chess-square"
+      )
+      .forEach(
+        function (square) {
+
+          square.addEventListener(
+            "click",
+            async function () {
+
+              const r =
+                Number(
+                  square.dataset.r
+                );
+
+              const c =
+                Number(
+                  square.dataset.c
+                );
+
+
+              if (!selected) {
+
+                if (
+                  board[r][c]
+                ) {
+
+                  selected = [
+                    r,
+                    c
+                  ];
+                  game.selectSquare(`${r},${c}`);
+
+                }
+
+              } else {
+
+                const [
+                  fromR,
+                  fromC
+                ] = selected;
+
+                const capturedPiece = board[r][c];
+
+                board[r][c] =
+                  board[fromR][fromC];
+
+                board[fromR][fromC] =
+                  "";
+
+                selected = null;
+                game.clearSelection();
+
+                if (capturedPiece === "♚" || capturedPiece === "♔") {
+                  game.completeGame();
+                  let result;
+                  try {
+                    result = await persistGameResult({
+                      stage: "chess",
+                      score: 1,
+                      maxScore: 1,
+                      game: "Chess"
+                    });
+                  } catch (error) {
+                    console.error("Could not save chess score:", error);
+                    showProgressSaveError();
+                    return;
+                  }
+                  openModal(`
+                    <h2 class="modal-title">${result.passed ? "Passed" : "Failed"}</h2>
+                    <p class="modal-subtitle">You captured the king. Your score was saved.</p>
+                    <div class="empty-state">
+                      <h3>${result.percentage}%</h3>
+                      <p>Score: 1 / 1</p>
+                      <p>Pass mark: ${PASS_MARK}%</p>
+                    </div>
+                    ${result.passed
+                      ? '<button class="primary-btn" id="chessContinueBtn" type="button">Continue</button>'
+                      : '<p>Pass this stage to unlock the next one.</p><button class="primary-btn" id="chessRetryBtn" type="button">Retake the test</button>'}
+                  `);
+                  if (result.passed) {
+                    document.getElementById("chessContinueBtn").addEventListener("click", () => continueToNextStage("chess"));
+                  } else {
+                    document.getElementById("chessRetryBtn").addEventListener("click", () => retryStage("chess"));
+                  }
+                  return;
+                }
+
+              }
+
+
+              renderBoard();
+
+            }
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "resetChess"
+      )
+      .addEventListener(
+        "click",
+        function () {
+
+          board =
+            initial.map(
+              function (row) {
+
+                return [...row];
+
+              }
+            );
+
+          selected = null;
+          game.reset();
+
+          renderBoard();
+
+        }
+      );
+
   }
 
-  async function finishGame() {
-    if (resultSaved) {
-      return;
-    }
-    resultSaved = true;
 
-    const playerWon = chess.isCheckmate() && chess.turn() === "b";
-    if (playerWon) {
-      game.completeGame();
-    }
-
-    const score = playerWon ? 1 : 0;
-    const outcome = chess.isCheckmate()
-      ? playerWon ? "You checkmated the computer." : "The computer checkmated you."
-      : "The game ended in a draw.";
-
-    let result;
-    try {
-      result = await persistGameResult({
-        stage: "chess",
-        score,
-        maxScore: 1,
-        game: "Chess"
-      });
-    } catch (error) {
-      resultSaved = false;
-      console.error("Could not save chess score:", error);
-      showProgressSaveError();
-      return;
-    }
-
-    openModal(`
-      <h2 class="modal-title">${result.passed ? "Passed" : "Failed"}</h2>
-      <p class="modal-subtitle">${outcome} Your score was saved.</p>
-      <div class="empty-state">
-        <h3>${result.percentage}%</h3>
-        <p>Score: ${score} / 1</p>
-        <p>Pass mark: ${PASS_MARK}%</p>
-      </div>
-      ${result.passed
-        ? '<button class="primary-btn" id="chessContinueBtn" type="button">Continue</button>'
-        : '<p>Pass this stage to unlock the next one.</p><button class="primary-btn" id="chessRetryBtn" type="button">Retake the test</button>'}
-    `);
-
-    if (result.passed) {
-      document.getElementById("chessContinueBtn").addEventListener("click", () => continueToNextStage("chess"));
-    } else {
-      document.getElementById("chessRetryBtn").addEventListener("click", () => retryStage("chess"));
-    }
-  }
-
-  function makeComputerMove() {
-    const moves = chess.moves({ verbose: true });
-    const move = chooseComputerMove(moves, game.level);
-    if (move) {
-      chess.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
-    }
-    computerThinking = false;
-
-    if (chess.isGameOver()) {
-      finishGame();
-    } else {
-      renderBoard();
-    }
-  }
-
-  function handlePlayerMove(square) {
-    if (computerThinking || chess.turn() !== "w" || chess.isGameOver()) {
-      return;
-    }
-
-    const piece = chess.get(square);
-    if (!selectedSquare) {
-      if (piece?.color === "w") {
-        selectedSquare = square;
-        game.selectSquare(square);
-        renderBoard();
-      } else {
-        renderBoard("Select one of your white pieces.");
-      }
-      return;
-    }
-
-    if (piece?.color === "w") {
-      selectedSquare = square;
-      game.selectSquare(square);
-      renderBoard();
-      return;
-    }
-
-    try {
-      chess.move({ from: selectedSquare, to: square, promotion: "q" });
-      selectedSquare = "";
-      game.clearSelection();
-
-      if (chess.isGameOver()) {
-        finishGame();
-        return;
-      }
-
-      computerThinking = true;
-      renderBoard();
-      window.setTimeout(makeComputerMove, 450);
-    } catch {
-      renderBoard("That is not a legal move. Choose a highlighted square.");
-    }
-  }
+  openModal("");
 
   renderBoard();
+
 }
 
 
@@ -1642,10 +1584,6 @@ document
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    if (unsubscribeBookings) {
-      unsubscribeBookings();
-      unsubscribeBookings = null;
-    }
     window.location.href = "../../login-page/login.html";
     return;
   }
@@ -1686,10 +1624,8 @@ onAuthStateChanged(auth, async (user) => {
       : createInitialState().games;
     state.assessment = remoteProgress?.latestAssessment || null;
     syncProgressManager(state.games);
-    state.bookings = [];
     renderGoals();
     renderBookings();
-    subscribeToBookings(user.uid);
     renderTasks();
     renderStageButtons();
     renderAssessmentProgress();
