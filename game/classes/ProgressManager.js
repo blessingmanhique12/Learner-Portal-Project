@@ -12,9 +12,19 @@ export class ProgressManager {
     completeStage(stageNumber) {
         const stageName = `stage${stageNumber}Complete`;
 
-        if (stageName in this.progress) {
+        if (stageName in this.progress && this.canStartStage(stageNumber)) {
             this.progress[stageName] = true;
         }
+    }
+
+    canStartStage(stageNumber) {
+        const stageName = `stage${stageNumber}Complete`;
+
+        if (!(stageName in this.progress)) {
+            return false;
+        }
+
+        return stageNumber === 1 || this.isStageComplete(stageNumber - 1);
     }
 
     isStageComplete(stageNumber) {

@@ -4,6 +4,7 @@ export class RPSGame {
         this.totalRounds = totalRounds;
 
         this.playerWins = 0;
+        this.computerWins = 0;
         this.roundsPlayed = 0;
         this.lastResult = '';
         this.playerChoice = '';
@@ -23,6 +24,8 @@ export class RPSGame {
 
         if (this.lastResult === 'win') {
             this.playerWins += 1;
+        } else if (this.lastResult === 'lose') {
+            this.computerWins += 1;
         }
 
         return this.lastResult;
@@ -58,12 +61,17 @@ export class RPSGame {
         return this.playerWins >= this.winningScore;
     }
 
+    hasLost() {
+        return this.computerWins >= this.winningScore;
+    }
+
     isFinished() {
         return this.roundsPlayed >= this.totalRounds;
     }
 
     reset() {
         this.playerWins = 0;
+        this.computerWins = 0;
         this.roundsPlayed = 0;
         this.lastResult = '';
         this.playerChoice = '';
