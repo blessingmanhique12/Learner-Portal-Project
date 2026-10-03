@@ -1,9 +1,18 @@
+/* ==========================================================
+   FILE TYPE: JAVASCRIPT (learner-progress.js)
+   Markers used in this file:
+   // [NEW]     = code that was added
+   // [CHANGED] = code that was updated
+   // [REMOVED] = note where old code was deleted
+   Everything else is your original code, unchanged.
+   ========================================================== */
 
 import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import {
+  addDoc, // [NEW] needed to save a new support booking
   doc,
   getDoc,
   collection,
@@ -162,6 +171,7 @@ let stateStorageKey = null;
 let progressManager = new ProgressManager();
 let progressRepository = null;
 let unsubscribeBookings = null;
+let previewEmpty = false; // [NEW] true while "Preview empty states" is switched on
 
 const stageKeys = ["html", "rps", "css", "chess", "javascript"];
 const PASS_MARK = 60;
@@ -334,6 +344,9 @@ function closeModal() {
 
   modalContent.innerHTML = "";
 
+  // [NEW] reset the assessment bar if the quiz was closed part-way through
+  renderAssessmentProgress();
+
 }
 
 
@@ -370,7 +383,54 @@ modal.addEventListener(
 
 
 /* =========================
+   [NEW] HELPER FUNCTIONS
+   (overdue check, upcoming bookings, empty-state preview)
+========================= */
+
+// Today's date as "YYYY-MM-DD" (same format as the date input)
+function getTodayString() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+// Overdue = has a due date, is not completed, and the date has passed
+function isTaskOverdue(task) {
+  return Boolean(task.dueDate) && !task.completed && task.dueDate < getTodayString();
+}
+
+// Upcoming = not completed and not cancelled
+function isBookingUpcoming(booking) {
+  const status = String(booking.status || "pending").toLowerCase();
+  return status !== "completed" && status !== "cancelled";
+}
+
+// In preview mode the dashboard pretends there is no data (real data is NOT touched)
+function getVisibleData() {
+  if (previewEmpty) {
+    return { goals: [], tasks: [], bookings: [] };
+  }
+  return { goals: state.goals, tasks: state.tasks, bookings: state.bookings };
+}
+
+function refreshDashboard() {
+  renderGoals();
+  renderTasks();
+  renderBookings();
+}
+
+function setEmptyPreview(isOn) {
+  previewEmpty = isOn;
+  document.getElementById("previewBtn").textContent =
+    isOn ? "Exit preview" : "Preview empty states";
+  refreshDashboard();
+}
+
+
+/* =========================
    RENDER GOALS
+   [CHANGED] now shows an empty state and uses getVisibleData()
 ========================= */
 
 function renderGoals() {
@@ -380,8 +440,10 @@ function renderGoals() {
       "goalsList"
     );
 
-  list.innerHTML =
-    state.goals
+  const goals = getVisibleData().goals;
+
+  list.innerHTML = goals.length
+    ? goals
       .map(function (goal, index) {
 
         return `
@@ -399,19 +461,19 @@ function renderGoals() {
         `;
 
       })
-      .join("");
+      .join("")
+    : '<div class="empty-state">No goals yet.</div>';
 
   document.getElementById(
     "goalCount"
   ).textContent =
-    state.goals.length;
+    goals.length;
 
   list.querySelectorAll("[data-goal-toggle]").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       state.goals[Number(checkbox.dataset.goalToggle)].completed = checkbox.checked;
       saveState();
       renderGoals();
-      updateDashboardProgress();
     });
   });
 
@@ -420,74 +482,34 @@ function renderGoals() {
       state.goals.splice(Number(button.dataset.goalDelete), 1);
       saveState();
       renderGoals();
-      updateDashboardProgress();
     });
   });
 
   updateDashboardProgress();
 }
 
-
-
-  /* DELETE BUTTONS */
-
-  document
-    .querySelectorAll(".delete-task")
-    .forEach(function (button) {
-
-      button.addEventListener(
-        "click",
-        function () {
-
-          const index =
-            Number(
-              button.dataset.delete
-            );
-
-          state.tasks.splice(
-            index,
-            1
-          );
-
-          saveState();
-
-          renderTasks();
-
-          updateDashboardProgress();
-
-        }
-      );
-
-    });
-
-
-  updateDashboardProgress();
+// [REMOVED] The old leftover "DELETE BUTTONS" block that used to sit here.
+// It was left over from an old version of renderTasks and did nothing.
 
 
 /* =========================
    UPDATE PROGRESS
+   [CHANGED] overdue is now worked out from the due date
 ========================= */
 
 function updateDashboardProgress() {
 
+  const { goals, tasks } = getVisibleData();
+
   const outstanding =
-    state.tasks.filter(
+    tasks.filter(
       function (task) {
         return !task.completed;
       }
     ).length;
 
   const overdue =
-    state.tasks.filter(
-      function (task) {
-
-        return (
-          !task.completed &&
-          task.overdue
-        );
-
-      }
-    ).length;
+    tasks.filter(isTaskOverdue).length;
 
 
   document.getElementById(
@@ -502,9 +524,9 @@ function updateDashboardProgress() {
     overdue;
 
   const completedGames = Object.values(state.games).filter(Boolean).length;
-  const completedGoals = state.goals.filter((goal) => goal.completed).length;
-  const completedTasks = state.tasks.filter((task) => task.completed).length;
-  const totalItems = 5 + state.goals.length + state.tasks.length;
+  const completedGoals = goals.filter((goal) => goal.completed).length;
+  const completedTasks = tasks.filter((task) => task.completed).length;
+  const totalItems = 5 + goals.length + tasks.length;
   const percentage = totalItems
     ? Math.round(((completedGames + completedGoals + completedTasks) / totalItems) * 100)
     : 0;
@@ -614,21 +636,33 @@ function showProgressSaveError() {
   document.getElementById("retryCloseBtn").addEventListener("click", closeModal);
 }
 
+
+/* =========================
+   RENDER BOOKINGS
+   [CHANGED] counter only counts upcoming bookings,
+   empty state uses the existing .empty-state style,
+   and respects preview mode
+========================= */
+
 function renderBookings() {
   const list = document.getElementById("bookingsList");
   const count = document.getElementById("bookingCount");
+  const bookings = getVisibleData().bookings;
 
   if (!list) return;
 
-  if (count) count.textContent = state.bookings.length;
+  if (count) count.textContent = bookings.filter(isBookingUpcoming).length;
   list.replaceChildren();
 
-  if (state.bookings.length === 0) {
-    list.textContent = "No support sessions have been booked for you yet.";
+  if (bookings.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "No support sessions have been booked for you yet.";
+    list.appendChild(empty);
     return;
   }
 
-  [...state.bookings]
+  [...bookings]
     .sort((first, second) => (first.preferredDate || "").localeCompare(second.preferredDate || ""))
     .forEach((booking) => {
       const item = document.createElement("div");
@@ -703,12 +737,19 @@ function subscribeToBookings(userId) {
   });
 }
 
+
+/* =========================
+   RENDER TASKS
+   [CHANGED] uses getVisibleData() and the .empty-state style
+========================= */
+
 function renderTasks() {
   const list = document.getElementById("tasksList");
+  const tasks = getVisibleData().tasks; // [NEW]
 
   if (list) {
-    list.innerHTML = state.tasks.length
-      ? state.tasks.map((task, index) => `
+    list.innerHTML = tasks.length // [CHANGED]
+      ? tasks.map((task, index) => `
           <div class="task-row ${task.completed ? "completed" : ""}">
             <input
               class="task-check"
@@ -725,7 +766,7 @@ function renderTasks() {
             <button class="delete-task" type="button" data-task-delete="${index}" aria-label="Delete ${escapeHtml(task.title)}">×</button>
           </div>
         `).join("")
-      : "No tasks yet.";
+      : '<div class="empty-state">No tasks yet.</div>'; // [CHANGED]
 
     list.querySelectorAll("[data-task-toggle]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
@@ -854,7 +895,8 @@ document
 
             saveState();
 
-            renderGoals();
+            // [CHANGED] switches preview off (if on) and re-draws everything
+            setEmptyPreview(false);
 
             closeModal();
 
@@ -897,18 +939,87 @@ document
       state.tasks.push({
         title,
         dueDate: document.getElementById("taskDueDate").value,
-        completed: false,
-        overdue: false
+        completed: false
+        // [REMOVED] "overdue: false" - overdue is now worked out from dueDate
       });
       saveState();
-      renderTasks();
+      setEmptyPreview(false); // [CHANGED] switches preview off (if on) and re-draws everything
       closeModal();
     });
   });
 
 
 /* =========================
+   [NEW] BOOK NEW SESSION
+   (this button had no click handler before)
+========================= */
+
+document
+  .getElementById("bookSessionBtn")
+  .addEventListener("click", function () {
+    openModal(`
+      <h2 class="modal-title">Book a support session</h2>
+      <p class="modal-subtitle">Tell your support team what you need help with.</p>
+      <form id="bookingForm">
+        <div class="form-group">
+          <label for="bookingTopic">Topic</label>
+          <input id="bookingTopic" required maxlength="80" placeholder="e.g. Help with JavaScript functions">
+        </div>
+        <div class="form-group">
+          <label for="bookingDate">Preferred date</label>
+          <input id="bookingDate" type="date" required>
+        </div>
+        <div class="form-group">
+          <label for="bookingNotes">Notes (optional)</label>
+          <input id="bookingNotes" maxlength="200" placeholder="Anything your facilitator should know">
+        </div>
+        <button class="primary-btn" type="submit">Book session</button>
+        <div id="bookingFeedback" class="quiz-feedback"></div>
+      </form>
+    `);
+
+    // Do not allow dates in the past
+    document.getElementById("bookingDate").min = getTodayString();
+
+    document.getElementById("bookingForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = event.target.querySelector("button[type='submit']");
+      const feedback = document.getElementById("bookingFeedback");
+      const topic = document.getElementById("bookingTopic").value.trim();
+
+      if (!topic) {
+        return;
+      }
+
+      submitButton.disabled = true;
+
+      try {
+        // Saves to Firestore. subscribeToBookings() then shows it
+        // on the page and updates the Support Bookings counter by itself.
+        await addDoc(collection(db, "bookings"), {
+          userId: auth.currentUser.uid,
+          topic,
+          preferredDate: document.getElementById("bookingDate").value,
+          notes: document.getElementById("bookingNotes").value.trim(),
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+        setEmptyPreview(false);
+        closeModal();
+      } catch (error) {
+        console.error("Could not book support session:", error);
+        submitButton.disabled = false;
+        feedback.textContent = "The session could not be booked. Check your connection and try again.";
+        feedback.style.color = "#d54c4c";
+      }
+    });
+  });
+
+
+/* =========================
    PREVIEW EMPTY STATES
+   [CHANGED] now really switches the dashboard to its empty
+   states (and back) instead of showing a generic popup
 ========================= */
 
 document
@@ -917,31 +1028,7 @@ document
     "click",
     function () {
 
-      openModal(`
-
-        <h2 class="modal-title">
-          Empty State Preview
-        </h2>
-
-        <p class="modal-subtitle">
-          This is how the dashboard responds when a section has no data.
-        </p>
-
-        <div class="empty-state">
-
-          <div
-            class="circle-icon blue"
-            style="margin:0 auto 10px;">
-
-            ○
-
-          </div>
-
-          Nothing to display yet.
-
-        </div>
-
-      `);
+      setEmptyPreview(!previewEmpty);
 
     }
   );
@@ -1502,8 +1589,7 @@ document
 
             return {
               ...task,
-              completed: false,
-              overdue: false
+              completed: false
             };
 
           }
@@ -1561,6 +1647,13 @@ document
 
           const section =
             link.dataset.section;
+
+
+          // [NEW] Home scrolls to the very top (so the welcome section is visible)
+          if (section === "home") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
 
 
           const targets = {
