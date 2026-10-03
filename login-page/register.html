@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
   <!-- Viewport settings keep the form responsive on phones and tablets. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Create account | LearnerHub</title>
   <!-- Loads the styles used by the registration page. -->
     <link rel="stylesheet" href="register.css">
 </head>
@@ -21,7 +21,7 @@
 
     <!-- Account section collects the user's profile and login details. -->
     <section class="form-section" aria-labelledby="account-details-heading">
-      <h2 id="account-details-heading">Account details</h2>
+      <h1 id="account-details-heading">Create your account</h1>
         <label for="registerEmail">Email address</label>
         <input id="registerEmail" type="email" autocomplete="email" placeholder="you@example.com" required>
 
@@ -53,26 +53,14 @@
         </div>
         </section>
 
-        <!-- Verification section lets the user choose and confirm an OTP method. -->
-        <section class="form-section" aria-labelledby="verification-heading">
-          <h2 id="verification-heading">Verification</h2>
-        <fieldset class="choice-group">
-          <legend>OTP method</legend>
-          <label><input type="radio" name="verificationMethod" value="email" checked> Email OTP</label>
-          <label><input type="radio" name="verificationMethod" value="phone"> Phone OTP</label>
-        </fieldset>
-
-        <button id="sendRegisterOtp" class="secondary-button" type="button">Send OTP</button>
-
-        <label for="registerOtp">Confirm OTP</label>
-        <input id="registerOtp" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
-        </section>
-
-        <!-- CAPTCHA is filled by the authentication service when enabled. -->
-        <div id="recaptcha-container"></div>
+        <p id="registerMessage" class="message" role="status" aria-live="polite" aria-busy="false">
+          <span id="registerMessageText"></span>
+          <span id="registerLoader" class="inline-loader" aria-hidden="true" hidden></span>
+        </p>
         <!-- Action area contains the final account creation command. -->
         <footer class="form-actions">
           <button id="registerButton" class="primary-button" type="submit">Create account</button>
+          <a href="reset.html">Forgot password?</a>
           <a class="back-login-button" href="login.html">Back to login</a>
         </footer>
       </form>

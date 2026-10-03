@@ -234,6 +234,47 @@ select {
 	gap: 5px;
 }
 
+.message {
+	min-height: 18px;
+	margin: 3px 0 0;
+	color: var(--navy);
+	font-size: 0.8rem;
+}
+
+.message.error {
+	color: #9b2c2c;
+}
+
+.message.success {
+	color: #176b4d;
+}
+
+.inline-loader {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-left: 8px;
+	vertical-align: -2px;
+	border: 2px solid rgba(18, 60, 102, 0.22);
+	border-top-color: var(--navy);
+	border-radius: 50%;
+	animation: register-spinner 700ms linear infinite;
+}
+
+.inline-loader[hidden] {
+	display: none;
+}
+
+@keyframes register-spinner {
+	to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.inline-loader {
+		animation-duration: 1.8s;
+	}
+}
+
 /* Styled navigation link returns users to the login page. */
 .back-login-button {
 	display: grid;

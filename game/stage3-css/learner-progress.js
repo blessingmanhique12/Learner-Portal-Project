@@ -1,36 +1,21 @@
-/* ==========================================================
-   FILE TYPE: JAVASCRIPT (learner-progress.js)
-   Markers used in this file:
-   // [NEW]     = code that was added
-   // [CHANGED] = code that was updated
-   // [REMOVED] = note where old code was deleted
-   Everything else is your original code, unchanged.
-   ========================================================== */
 
 import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import {
-  addDoc, // [NEW] needed to save a new support booking
   doc,
   getDoc,
   collection,
-  onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
-  updateDoc,
-  where,
   writeBatch
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { auth, db } from "../../FirebaseAuth/firebase.js";
-import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
-import { ChessGame } from "../../game/classes/ChessGame.js";
-import { ProgressManager } from "../../game/classes/ProgressManager.js";
-import { QuizGame } from "../../game/classes/QuizGame.js";
-import { RPSGame } from "../../game/classes/RPSGame.js";
-import { chessLevels, chessPieces, chooseComputerMove } from "../../game/stage4-chess/stage4-chess.js";
+import { ChessGame } from "../classes/ChessGame.js";
+import { ProgressManager } from "../classes/ProgressManager.js";
+import { QuizGame } from "../classes/QuizGame.js";
+import { RPSGame } from "../classes/RPSGame.js";
 
 /* =========================
    QUIZ QUESTIONS
@@ -170,8 +155,6 @@ let state = createInitialState();
 let stateStorageKey = null;
 let progressManager = new ProgressManager();
 let progressRepository = null;
-let unsubscribeBookings = null;
-let previewEmpty = false; // [NEW] true while "Preview empty states" is switched on
 
 const stageKeys = ["html", "rps", "css", "chess", "javascript"];
 const PASS_MARK = 60;
@@ -344,9 +327,6 @@ function closeModal() {
 
   modalContent.innerHTML = "";
 
-  // [NEW] reset the assessment bar if the quiz was closed part-way through
-  renderAssessmentProgress();
-
 }
 
 
@@ -383,54 +363,7 @@ modal.addEventListener(
 
 
 /* =========================
-   [NEW] HELPER FUNCTIONS
-   (overdue check, upcoming bookings, empty-state preview)
-========================= */
-
-// Today's date as "YYYY-MM-DD" (same format as the date input)
-function getTodayString() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
-// Overdue = has a due date, is not completed, and the date has passed
-function isTaskOverdue(task) {
-  return Boolean(task.dueDate) && !task.completed && task.dueDate < getTodayString();
-}
-
-// Upcoming = not completed and not cancelled
-function isBookingUpcoming(booking) {
-  const status = String(booking.status || "pending").toLowerCase();
-  return status !== "completed" && status !== "cancelled";
-}
-
-// In preview mode the dashboard pretends there is no data (real data is NOT touched)
-function getVisibleData() {
-  if (previewEmpty) {
-    return { goals: [], tasks: [], bookings: [] };
-  }
-  return { goals: state.goals, tasks: state.tasks, bookings: state.bookings };
-}
-
-function refreshDashboard() {
-  renderGoals();
-  renderTasks();
-  renderBookings();
-}
-
-function setEmptyPreview(isOn) {
-  previewEmpty = isOn;
-  document.getElementById("previewBtn").textContent =
-    isOn ? "Exit preview" : "Preview empty states";
-  refreshDashboard();
-}
-
-
-/* =========================
    RENDER GOALS
-   [CHANGED] now shows an empty state and uses getVisibleData()
 ========================= */
 
 function renderGoals() {
@@ -440,10 +373,8 @@ function renderGoals() {
       "goalsList"
     );
 
-  const goals = getVisibleData().goals;
-
-  list.innerHTML = goals.length
-    ? goals
+  list.innerHTML =
+    state.goals
       .map(function (goal, index) {
 
         return `
@@ -461,19 +392,19 @@ function renderGoals() {
         `;
 
       })
-      .join("")
-    : '<div class="empty-state">No goals yet.</div>';
+      .join("");
 
   document.getElementById(
     "goalCount"
   ).textContent =
-    goals.length;
+    state.goals.length;
 
   list.querySelectorAll("[data-goal-toggle]").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       state.goals[Number(checkbox.dataset.goalToggle)].completed = checkbox.checked;
       saveState();
       renderGoals();
+      updateDashboardProgress();
     });
   });
 
@@ -482,34 +413,74 @@ function renderGoals() {
       state.goals.splice(Number(button.dataset.goalDelete), 1);
       saveState();
       renderGoals();
+      updateDashboardProgress();
     });
   });
 
   updateDashboardProgress();
 }
 
-// [REMOVED] The old leftover "DELETE BUTTONS" block that used to sit here.
-// It was left over from an old version of renderTasks and did nothing.
+
+
+  /* DELETE BUTTONS */
+
+  document
+    .querySelectorAll(".delete-task")
+    .forEach(function (button) {
+
+      button.addEventListener(
+        "click",
+        function () {
+
+          const index =
+            Number(
+              button.dataset.delete
+            );
+
+          state.tasks.splice(
+            index,
+            1
+          );
+
+          saveState();
+
+          renderTasks();
+
+          updateDashboardProgress();
+
+        }
+      );
+
+    });
+
+
+  updateDashboardProgress();
 
 
 /* =========================
    UPDATE PROGRESS
-   [CHANGED] overdue is now worked out from the due date
 ========================= */
 
 function updateDashboardProgress() {
 
-  const { goals, tasks } = getVisibleData();
-
   const outstanding =
-    tasks.filter(
+    state.tasks.filter(
       function (task) {
         return !task.completed;
       }
     ).length;
 
   const overdue =
-    tasks.filter(isTaskOverdue).length;
+    state.tasks.filter(
+      function (task) {
+
+        return (
+          !task.completed &&
+          task.overdue
+        );
+
+      }
+    ).length;
 
 
   document.getElementById(
@@ -524,9 +495,9 @@ function updateDashboardProgress() {
     overdue;
 
   const completedGames = Object.values(state.games).filter(Boolean).length;
-  const completedGoals = goals.filter((goal) => goal.completed).length;
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const totalItems = 5 + goals.length + tasks.length;
+  const completedGoals = state.goals.filter((goal) => goal.completed).length;
+  const completedTasks = state.tasks.filter((task) => task.completed).length;
+  const totalItems = 5 + state.goals.length + state.tasks.length;
   const percentage = totalItems
     ? Math.round(((completedGames + completedGoals + completedTasks) / totalItems) * 100)
     : 0;
@@ -636,120 +607,27 @@ function showProgressSaveError() {
   document.getElementById("retryCloseBtn").addEventListener("click", closeModal);
 }
 
-
-/* =========================
-   RENDER BOOKINGS
-   [CHANGED] counter only counts upcoming bookings,
-   empty state uses the existing .empty-state style,
-   and respects preview mode
-========================= */
-
 function renderBookings() {
   const list = document.getElementById("bookingsList");
   const count = document.getElementById("bookingCount");
-  const bookings = getVisibleData().bookings;
 
-  if (!list) return;
-
-  if (count) count.textContent = bookings.filter(isBookingUpcoming).length;
-  list.replaceChildren();
-
-  if (bookings.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No support sessions have been booked for you yet.";
-    list.appendChild(empty);
-    return;
+  if (count) {
+    count.textContent = state.bookings.length;
   }
 
-  [...bookings]
-    .sort((first, second) => (first.preferredDate || "").localeCompare(second.preferredDate || ""))
-    .forEach((booking) => {
-      const item = document.createElement("div");
-      item.className = "booking-item";
-
-      const heading = document.createElement("div");
-      heading.className = "booking-item-heading";
-      const topic = document.createElement("strong");
-      topic.textContent = booking.topic || "Support session";
-      const status = document.createElement("span");
-      status.className = `booking-status ${String(booking.status || "pending").toLowerCase()}`;
-      status.textContent = booking.status || "pending";
-      heading.append(topic, status);
-
-      const date = document.createElement("p");
-      date.textContent = `Preferred date: ${booking.preferredDate || "To be arranged"}`;
-      const notes = document.createElement("p");
-      notes.className = "booking-notes";
-      notes.textContent = booking.notes || "No additional notes.";
-
-      item.append(heading, date, notes);
-      if (booking.status !== "completed") {
-        const completeButton = document.createElement("button");
-        completeButton.type = "button";
-        completeButton.className = "booking-complete-button";
-        completeButton.textContent = "Mark session complete";
-        completeButton.addEventListener("click", () => completeLearnerBooking(booking, completeButton));
-        item.appendChild(completeButton);
-      }
-      list.appendChild(item);
-    });
-}
-
-async function completeLearnerBooking(booking, button) {
-  button.disabled = true;
-  try {
-    await updateDoc(doc(db, "bookings", booking.id), {
-      status: "completed",
-      completedAt: serverTimestamp(),
-      completedBy: auth.currentUser.uid
-    });
-  } catch (error) {
-    console.error("Could not complete learner support session:", error);
-    button.disabled = false;
-    openModal(`
-      <h2 class="modal-title">Session could not be completed</h2>
-      <p class="modal-subtitle">Check your connection and try again. If this continues, contact your facilitator.</p>
-      <button class="primary-btn" id="bookingErrorCloseBtn" type="button">Close</button>
-    `);
-    document.getElementById("bookingErrorCloseBtn").addEventListener("click", closeModal);
+  if (list) {
+    list.textContent = state.bookings.length
+      ? "Your upcoming bookings will appear here."
+      : "No upcoming support bookings.";
   }
 }
-
-function subscribeToBookings(userId) {
-  if (unsubscribeBookings) unsubscribeBookings();
-
-  const learnerBookingsQuery = query(
-    collection(db, "bookings"),
-    where("userId", "==", userId)
-  );
-
-  unsubscribeBookings = onSnapshot(learnerBookingsQuery, (snapshot) => {
-    state.bookings = snapshot.docs.map((bookingDocument) => ({
-      id: bookingDocument.id,
-      ...bookingDocument.data()
-    }));
-    renderBookings();
-  }, (error) => {
-    console.error("Could not load learner support bookings:", error);
-    const list = document.getElementById("bookingsList");
-    if (list) list.textContent = "Support sessions could not be loaded. Please try again later.";
-  });
-}
-
-
-/* =========================
-   RENDER TASKS
-   [CHANGED] uses getVisibleData() and the .empty-state style
-========================= */
 
 function renderTasks() {
   const list = document.getElementById("tasksList");
-  const tasks = getVisibleData().tasks; // [NEW]
 
   if (list) {
-    list.innerHTML = tasks.length // [CHANGED]
-      ? tasks.map((task, index) => `
+    list.innerHTML = state.tasks.length
+      ? state.tasks.map((task, index) => `
           <div class="task-row ${task.completed ? "completed" : ""}">
             <input
               class="task-check"
@@ -766,7 +644,7 @@ function renderTasks() {
             <button class="delete-task" type="button" data-task-delete="${index}" aria-label="Delete ${escapeHtml(task.title)}">×</button>
           </div>
         `).join("")
-      : '<div class="empty-state">No tasks yet.</div>'; // [CHANGED]
+      : "No tasks yet.";
 
     list.querySelectorAll("[data-task-toggle]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
@@ -895,8 +773,7 @@ document
 
             saveState();
 
-            // [CHANGED] switches preview off (if on) and re-draws everything
-            setEmptyPreview(false);
+            renderGoals();
 
             closeModal();
 
@@ -939,87 +816,18 @@ document
       state.tasks.push({
         title,
         dueDate: document.getElementById("taskDueDate").value,
-        completed: false
-        // [REMOVED] "overdue: false" - overdue is now worked out from dueDate
+        completed: false,
+        overdue: false
       });
       saveState();
-      setEmptyPreview(false); // [CHANGED] switches preview off (if on) and re-draws everything
+      renderTasks();
       closeModal();
     });
   });
 
 
 /* =========================
-   [NEW] BOOK NEW SESSION
-   (this button had no click handler before)
-========================= */
-
-document
-  .getElementById("bookSessionBtn")
-  .addEventListener("click", function () {
-    openModal(`
-      <h2 class="modal-title">Book a support session</h2>
-      <p class="modal-subtitle">Tell your support team what you need help with.</p>
-      <form id="bookingForm">
-        <div class="form-group">
-          <label for="bookingTopic">Topic</label>
-          <input id="bookingTopic" required maxlength="80" placeholder="e.g. Help with JavaScript functions">
-        </div>
-        <div class="form-group">
-          <label for="bookingDate">Preferred date</label>
-          <input id="bookingDate" type="date" required>
-        </div>
-        <div class="form-group">
-          <label for="bookingNotes">Notes (optional)</label>
-          <input id="bookingNotes" maxlength="200" placeholder="Anything your facilitator should know">
-        </div>
-        <button class="primary-btn" type="submit">Book session</button>
-        <div id="bookingFeedback" class="quiz-feedback"></div>
-      </form>
-    `);
-
-    // Do not allow dates in the past
-    document.getElementById("bookingDate").min = getTodayString();
-
-    document.getElementById("bookingForm").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const submitButton = event.target.querySelector("button[type='submit']");
-      const feedback = document.getElementById("bookingFeedback");
-      const topic = document.getElementById("bookingTopic").value.trim();
-
-      if (!topic) {
-        return;
-      }
-
-      submitButton.disabled = true;
-
-      try {
-        // Saves to Firestore. subscribeToBookings() then shows it
-        // on the page and updates the Support Bookings counter by itself.
-        await addDoc(collection(db, "bookings"), {
-          userId: auth.currentUser.uid,
-          topic,
-          preferredDate: document.getElementById("bookingDate").value,
-          notes: document.getElementById("bookingNotes").value.trim(),
-          status: "pending",
-          createdAt: serverTimestamp()
-        });
-        setEmptyPreview(false);
-        closeModal();
-      } catch (error) {
-        console.error("Could not book support session:", error);
-        submitButton.disabled = false;
-        feedback.textContent = "The session could not be booked. Check your connection and try again.";
-        feedback.style.color = "#d54c4c";
-      }
-    });
-  });
-
-
-/* =========================
    PREVIEW EMPTY STATES
-   [CHANGED] now really switches the dashboard to its empty
-   states (and back) instead of showing a generic popup
 ========================= */
 
 document
@@ -1028,7 +836,31 @@ document
     "click",
     function () {
 
-      setEmptyPreview(!previewEmpty);
+      openModal(`
+
+        <h2 class="modal-title">
+          Empty State Preview
+        </h2>
+
+        <p class="modal-subtitle">
+          This is how the dashboard responds when a section has no data.
+        </p>
+
+        <div class="empty-state">
+
+          <div
+            class="circle-icon blue"
+            style="margin:0 auto 10px;">
+
+            ○
+
+          </div>
+
+          Nothing to display yet.
+
+        </div>
+
+      `);
 
     }
   );
@@ -1249,27 +1081,16 @@ function startRps() {
 
   const game = new RPSGame(3, 5);
   const choices = ["Rock", "Paper", "Scissors"];
-  const choiceImages = {
-    rock: "../../game/stage2-rps/rock-emoji.png",
-    paper: "../../game/stage2-rps/paper-emoji.png",
-    scissors: "../../game/stage2-rps/scissors-emoji.png"
-  };
 
   openModal(`
     <h2 class="modal-title">Rock, Paper, Scissors</h2>
     <p class="modal-subtitle">First to three wins, or finish five rounds.</p>
     <div class="rps-buttons">
-      ${choices.map((choice) => `
-        <button class="rps-choice-button" type="button" data-choice="${choice}" aria-label="Choose ${choice}">
-          <img src="${choiceImages[choice.toLowerCase()]}" alt="">
-          <span>${choice}</span>
-        </button>
-      `).join("")}
+      <button type="button" data-choice="Rock">Rock</button>
+      <button type="button" data-choice="Paper">Paper</button>
+      <button type="button" data-choice="Scissors">Scissors</button>
     </div>
-    <div class="rps-result" id="rpsResult">
-      <p>Choose your hand to play the first round.</p>
-      <strong>Your score: 0 | Computer: 0</strong>
-    </div>
+    <div class="rps-result" id="rpsResult">Your score: 0 | Computer: 0</div>
   `);
 
   document.querySelectorAll(".rps-buttons button").forEach((button) => {
@@ -1286,21 +1107,9 @@ function startRps() {
       const resultElement = document.getElementById("rpsResult");
 
       resultElement.innerHTML = `
-        <div class="rps-reveal">
-          <div class="rps-hand-choice">
-            <span>You</span>
-            <img src="${choiceImages[user.toLowerCase()]}" alt="${user}">
-            <strong>${user}</strong>
-          </div>
-          <strong class="rps-versus" aria-label="versus">VS</strong>
-          <div class="rps-hand-choice">
-            <span>Computer</span>
-            <img src="${choiceImages[computer.toLowerCase()]}" alt="${computer}">
-            <strong>${computer}</strong>
-          </div>
-        </div>
-        <p>${result}</p>
-        <strong>Your score: ${game.playerWins} | Computer: ${game.computerWins}</strong>
+        <strong>You:</strong> ${user} &nbsp; <strong>Computer:</strong> ${computer}<br>
+        ${result}<br><br>
+        Your score: ${game.playerWins} | Computer: ${game.computerWins}
         ${gameFinished ? "<br><br><strong>Game complete.</strong><br>Saving score..." : ""}
       `;
 
@@ -1349,197 +1158,243 @@ function startChess() {
     return;
   }
 
-  openModal(`
-    <h2 class="modal-title">Chess</h2>
-    <p class="modal-subtitle">Choose your difficulty. You play White against the computer.</p>
-    <div class="chess-level-options">
-      ${chessLevels.map(({ value, description }) => `
-        <button class="chess-level-option" type="button" data-chess-level="${value}">
-          <strong>${value === "mid" ? "Intermediate" : value[0].toUpperCase() + value.slice(1)}</strong>
-          <span>${escapeHtml(description)}</span>
-        </button>
-      `).join("")}
-    </div>
-  `);
+  const game = new ChessGame();
 
-  modalContent.querySelectorAll("[data-chess-level]").forEach((button) => {
-    button.addEventListener("click", () => startChessMatch(button.dataset.chessLevel));
-  });
-}
+  const initial = [
 
-function startChessMatch(level) {
-  const game = new ChessGame(level);
-  const chess = new Chess();
-  const levelName = chessLevels.find((item) => item.value === level)?.value || "beginner";
-  let selectedSquare = "";
-  let computerThinking = false;
-  let resultSaved = false;
+    ["♜","♞","♝","♛","♚","♝","♞","♜"],
 
-  function renderBoard(statusMessage = "") {
-    const board = chess.board();
-    const legalTargets = selectedSquare
-      ? chess.moves({ square: selectedSquare, verbose: true }).map((move) => move.to)
-      : [];
-    const status = statusMessage || (computerThinking
-      ? "Computer is thinking..."
-      : chess.isCheck()
-        ? "Check. Your move."
-        : "Your move. Select a white piece.");
+    ["♟","♟","♟","♟","♟","♟","♟","♟"],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["","","","","","","",""],
+
+    ["♙","♙","♙","♙","♙","♙","♙","♙"],
+
+    ["♖","♘","♗","♕","♔","♗","♘","♖"]
+
+  ];
+
+
+  let board =
+    initial.map(
+      function (row) {
+
+        return [...row];
+
+      }
+    );
+
+
+  let selected = null;
+
+
+  function renderBoard() {
 
     modalContent.innerHTML = `
-      <h2 class="modal-title">Chess: ${levelName === "mid" ? "Intermediate" : levelName[0].toUpperCase() + levelName.slice(1)}</h2>
-      <p class="modal-subtitle">You are White. The computer is Black.</p>
-      <p class="chess-status" id="chessStatus" aria-live="polite">${escapeHtml(status)}</p>
-      <div class="chess-board" role="grid" aria-label="Chess board">
-        ${board.flatMap((row, rowIndex) => row.map((piece, columnIndex) => {
-          const squareName = `${"abcdefgh"[columnIndex]}${8 - rowIndex}`;
-          const isSelected = selectedSquare === squareName;
-          const isLegalTarget = legalTargets.includes(squareName);
-          const pieceName = piece
-            ? `${piece.color === "w" ? "White" : "Black"} ${piece.type}`
-            : "empty";
-          const classes = [
-            "chess-square",
-            (rowIndex + columnIndex) % 2 ? "dark" : "light",
-            isSelected ? "selected" : "",
-            isLegalTarget ? "legal-target" : "",
-            piece ? "has-piece" : ""
-          ].filter(Boolean).join(" ");
 
-          return `
-            <button class="${classes}" type="button" role="gridcell"
-              data-square="${squareName}" aria-label="${squareName}, ${pieceName}"
-              ${computerThinking || chess.isGameOver() ? "disabled" : ""}>
-              ${piece ? chessPieces[piece.color][piece.type] : ""}
-            </button>
-          `;
-        })).join("")}
+      <h2 class="modal-title">
+        Chess
+      </h2>
+
+      <p class="modal-subtitle">
+        Select a piece, then select a square to move it.
+        This is a basic interactive board.
+      </p>
+
+      <div class="chess-board">
+
+        ${board
+          .flatMap(
+            function (row, r) {
+
+              return row.map(
+                function (piece, c) {
+
+                  return `
+
+                    <button
+                      class="chess-square
+                        ${
+                          (r + c) % 2
+                            ? "dark"
+                            : "light"
+                        }
+                        ${
+                          selected &&
+                          selected[0] === r &&
+                          selected[1] === c
+                            ? "selected"
+                            : ""
+                        }"
+
+                      data-r="${r}"
+                      data-c="${c}">
+
+                      ${piece}
+
+                    </button>
+
+                  `;
+
+                }
+              );
+
+            }
+          )
+          .join("")}
+
       </div>
-      <button class="secondary-btn" id="restartChessMatch" type="button">Restart match</button>
+
+      <button
+        class="secondary-btn"
+        id="resetChess">
+
+        Reset board
+
+      </button>
+
     `;
 
-    modalContent.querySelectorAll("[data-square]").forEach((squareButton) => {
-      squareButton.addEventListener("click", () => handlePlayerMove(squareButton.dataset.square));
-    });
-    document.getElementById("restartChessMatch").addEventListener("click", () => {
-      chess.reset();
-      game.reset();
-      selectedSquare = "";
-      computerThinking = false;
-      resultSaved = false;
-      renderBoard();
-    });
+
+    document
+      .querySelectorAll(
+        ".chess-square"
+      )
+      .forEach(
+        function (square) {
+
+          square.addEventListener(
+            "click",
+            async function () {
+
+              const r =
+                Number(
+                  square.dataset.r
+                );
+
+              const c =
+                Number(
+                  square.dataset.c
+                );
+
+
+              if (!selected) {
+
+                if (
+                  board[r][c]
+                ) {
+
+                  selected = [
+                    r,
+                    c
+                  ];
+                  game.selectSquare(`${r},${c}`);
+
+                }
+
+              } else {
+
+                const [
+                  fromR,
+                  fromC
+                ] = selected;
+
+                const capturedPiece = board[r][c];
+
+                board[r][c] =
+                  board[fromR][fromC];
+
+                board[fromR][fromC] =
+                  "";
+
+                selected = null;
+                game.clearSelection();
+
+                if (capturedPiece === "♚" || capturedPiece === "♔") {
+                  game.completeGame();
+                  let result;
+                  try {
+                    result = await persistGameResult({
+                      stage: "chess",
+                      score: 1,
+                      maxScore: 1,
+                      game: "Chess"
+                    });
+                  } catch (error) {
+                    console.error("Could not save chess score:", error);
+                    showProgressSaveError();
+                    return;
+                  }
+                  openModal(`
+                    <h2 class="modal-title">${result.passed ? "Passed" : "Failed"}</h2>
+                    <p class="modal-subtitle">You captured the king. Your score was saved.</p>
+                    <div class="empty-state">
+                      <h3>${result.percentage}%</h3>
+                      <p>Score: 1 / 1</p>
+                      <p>Pass mark: ${PASS_MARK}%</p>
+                    </div>
+                    ${result.passed
+                      ? '<button class="primary-btn" id="chessContinueBtn" type="button">Continue</button>'
+                      : '<p>Pass this stage to unlock the next one.</p><button class="primary-btn" id="chessRetryBtn" type="button">Retake the test</button>'}
+                  `);
+                  if (result.passed) {
+                    document.getElementById("chessContinueBtn").addEventListener("click", () => continueToNextStage("chess"));
+                  } else {
+                    document.getElementById("chessRetryBtn").addEventListener("click", () => retryStage("chess"));
+                  }
+                  return;
+                }
+
+              }
+
+
+              renderBoard();
+
+            }
+          );
+
+        }
+      );
+
+
+    document
+      .getElementById(
+        "resetChess"
+      )
+      .addEventListener(
+        "click",
+        function () {
+
+          board =
+            initial.map(
+              function (row) {
+
+                return [...row];
+
+              }
+            );
+
+          selected = null;
+          game.reset();
+
+          renderBoard();
+
+        }
+      );
+
   }
 
-  async function finishGame() {
-    if (resultSaved) {
-      return;
-    }
-    resultSaved = true;
 
-    const playerWon = chess.isCheckmate() && chess.turn() === "b";
-    if (playerWon) {
-      game.completeGame();
-    }
-
-    const score = playerWon ? 1 : 0;
-    const outcome = chess.isCheckmate()
-      ? playerWon ? "You checkmated the computer." : "The computer checkmated you."
-      : "The game ended in a draw.";
-
-    let result;
-    try {
-      result = await persistGameResult({
-        stage: "chess",
-        score,
-        maxScore: 1,
-        game: "Chess"
-      });
-    } catch (error) {
-      resultSaved = false;
-      console.error("Could not save chess score:", error);
-      showProgressSaveError();
-      return;
-    }
-
-    openModal(`
-      <h2 class="modal-title">${result.passed ? "Passed" : "Failed"}</h2>
-      <p class="modal-subtitle">${outcome} Your score was saved.</p>
-      <div class="empty-state">
-        <h3>${result.percentage}%</h3>
-        <p>Score: ${score} / 1</p>
-        <p>Pass mark: ${PASS_MARK}%</p>
-      </div>
-      ${result.passed
-        ? '<button class="primary-btn" id="chessContinueBtn" type="button">Continue</button>'
-        : '<p>Pass this stage to unlock the next one.</p><button class="primary-btn" id="chessRetryBtn" type="button">Retake the test</button>'}
-    `);
-
-    if (result.passed) {
-      document.getElementById("chessContinueBtn").addEventListener("click", () => continueToNextStage("chess"));
-    } else {
-      document.getElementById("chessRetryBtn").addEventListener("click", () => retryStage("chess"));
-    }
-  }
-
-  function makeComputerMove() {
-    const moves = chess.moves({ verbose: true });
-    const move = chooseComputerMove(moves, game.level);
-    if (move) {
-      chess.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
-    }
-    computerThinking = false;
-
-    if (chess.isGameOver()) {
-      finishGame();
-    } else {
-      renderBoard();
-    }
-  }
-
-  function handlePlayerMove(square) {
-    if (computerThinking || chess.turn() !== "w" || chess.isGameOver()) {
-      return;
-    }
-
-    const piece = chess.get(square);
-    if (!selectedSquare) {
-      if (piece?.color === "w") {
-        selectedSquare = square;
-        game.selectSquare(square);
-        renderBoard();
-      } else {
-        renderBoard("Select one of your white pieces.");
-      }
-      return;
-    }
-
-    if (piece?.color === "w") {
-      selectedSquare = square;
-      game.selectSquare(square);
-      renderBoard();
-      return;
-    }
-
-    try {
-      chess.move({ from: selectedSquare, to: square, promotion: "q" });
-      selectedSquare = "";
-      game.clearSelection();
-
-      if (chess.isGameOver()) {
-        finishGame();
-        return;
-      }
-
-      computerThinking = true;
-      renderBoard();
-      window.setTimeout(makeComputerMove, 450);
-    } catch {
-      renderBoard("That is not a legal move. Choose a highlighted square.");
-    }
-  }
+  openModal("");
 
   renderBoard();
+
 }
 
 
@@ -1589,7 +1444,8 @@ document
 
             return {
               ...task,
-              completed: false
+              completed: false,
+              overdue: false
             };
 
           }
@@ -1647,13 +1503,6 @@ document
 
           const section =
             link.dataset.section;
-
-
-          // [NEW] Home scrolls to the very top (so the welcome section is visible)
-          if (section === "home") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-          }
 
 
           const targets = {
@@ -1735,10 +1584,6 @@ document
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    if (unsubscribeBookings) {
-      unsubscribeBookings();
-      unsubscribeBookings = null;
-    }
     window.location.href = "../../login-page/login.html";
     return;
   }
@@ -1779,10 +1624,8 @@ onAuthStateChanged(auth, async (user) => {
       : createInitialState().games;
     state.assessment = remoteProgress?.latestAssessment || null;
     syncProgressManager(state.games);
-    state.bookings = [];
     renderGoals();
     renderBookings();
-    subscribeToBookings(user.uid);
     renderTasks();
     renderStageButtons();
     renderAssessmentProgress();

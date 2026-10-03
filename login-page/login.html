@@ -1,19 +1,16 @@
-<!-- Login page for the LearnerHub portal. -->
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | LearnerHub</title>
-  <!-- Reuses the register page brand system and adds login-only rules. -->
   <link rel="stylesheet" href="login.css">
 </head>
 
 <body>
-  <!-- Main landmark keeps the login experience centered and accessible. -->
   <main class="login-page">
     <form id="loginPanel" class="auth-form login-form" novalidate>
-      <!-- The same logo and 3D treatment used by the register page. -->
       <header class="brand-logo">
         <img src="logoImage.png.png" alt="LearnerHub logo">
       </header>
@@ -28,7 +25,7 @@
         <div class="password-field">
           <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password"
             required>
-          <!-- The script toggles this input between password and text types. -->
+
           <button class="password-toggle" type="button" aria-label="Show password" aria-pressed="false"
             data-toggle-password="loginPassword">
             <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -38,16 +35,11 @@
           </button>
         </div>
 
-        <label for="loginRole">Login as</label>
-        <select id="loginRole" required>
-          <option value="learner">Learner</option>
-          <option value="facilitator">Facilitator</option>
-        </select>
       </section>
 
       <p id="message" class="message" role="status" aria-live="polite"></p>
+      <button id="resendVerification" class="secondary-button" type="button" hidden>Resend verification email</button>
 
-      <!-- Primary action submits the credentials after browser validation. -->
       <footer class="form-actions">
         <button id="loginButton" class="primary-button" type="submit">Sign in</button>
         <nav class="account-links" aria-label="Account options">
@@ -58,7 +50,6 @@
     </form>
   </main>
 
-  <!-- Provides password visibility and login feedback behavior. -->
   <script type="module" src="login.js"></script>
 </body>
 
