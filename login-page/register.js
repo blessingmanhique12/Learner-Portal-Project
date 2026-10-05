@@ -37,7 +37,7 @@ class RegistrationPage {
 		this.restoreRegistrationDraft();
 		this.form?.addEventListener("submit", (event) => this.handleSubmit(event));
 	}
-
+////////////////////////////
 	restoreRegistrationDraft() {
 		try {
 			const savedDraft = localStorage.getItem(this.registrationDraftKey);
