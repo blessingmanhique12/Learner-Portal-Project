@@ -413,6 +413,29 @@ button {
   color: #3f5664;
 }
 
+.assigned-assessments-card {
+  background: #f8fbfd;
+}
+
+.assigned-assessment-item {
+  padding: 12px 0;
+  border-top: 1px solid #edf1f4;
+}
+
+.assigned-assessment-item:first-child {
+  border-top: 0;
+}
+
+.assigned-assessment-item p {
+  margin: 6px 0;
+  color: #667985;
+  font-size: 12px;
+}
+
+.assigned-assessment-item .primary-btn {
+  margin-top: 5px;
+}
+
 .booking-complete-button {
   min-height: 34px;
   margin-top: 8px;
