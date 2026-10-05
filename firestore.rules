@@ -74,9 +74,63 @@ service cloud.firestore {
           || getAfter(
             /databases/$(database)/documents/learnerProgress/$(request.auth.uid)
           ).data.games[request.resource.data.stage] == true
+        )
+        && (
+          !('assessmentAssignmentId' in request.resource.data)
+          || (
+            request.resource.data.stage == 'skills-assessment'
+            && request.resource.data.assessment == true
+            && getAfter(
+              /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
+            ).data.userId == request.auth.uid
+            && getAfter(
+              /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
+            ).data.status == 'completed'
+          )
         );
 
       allow update, delete: if false;
+    }
+
+    match /assessmentAssignments/{assignmentId} {
+      allow read: if request.auth != null
+        && (resource.data.userId == request.auth.uid || isFacilitator());
+
+      allow create: if isFacilitator()
+        && request.resource.data.userId is string
+        && request.resource.data.facilitatorId == request.auth.uid
+        && request.resource.data.assessment == 'skills-assessment'
+        && request.resource.data.status == 'assigned'
+        && request.resource.data.assignedAt == request.time
+        && get(
+          /databases/$(database)/documents/registrations/$(request.resource.data.userId)
+        ).data.role == 'learner';
+
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'assigned'
+        && request.resource.data.status == 'completed'
+        && request.resource.data.completedAt == request.time
+        && request.resource.data.scoreId is string
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'completedAt', 'scoreId'])
+        && getAfter(
+          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
+        ).data.userId == request.auth.uid
+        && getAfter(
+          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
+        ).data.stage == 'skills-assessment'
+        && getAfter(
+          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
+        ).data.assessment == true
+        && getAfter(
+          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
+        ).data.assessmentAssignmentId == assignmentId
+        && getAfter(
+          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
+        ).data.completedAt == request.time;
+
+      allow delete: if false;
     }
 
     match /learnerProgress/{userId} {

@@ -102,38 +102,82 @@
 					</header>
 
 					<div class="learner-overview">
-						<div><span>Stages complete</span><strong id="selectedStageCount">0 / 5</strong></div>
+						<div class="overall-progress-overview">
+							<span>Overall programme progress</span>
+							<strong id="selectedOverallProgress">0%</strong>
+							<progress id="selectedProgressBar" class="overall-progress-bar" max="5" value="0"
+								aria-label="Overall programme progress: 0 of 5 stages complete"></progress>
+							<small id="selectedStageCount">0 / 5 stages complete</small>
+						</div>
 						<div><span>Latest assessment</span><strong id="selectedAssessmentScore">No attempt</strong></div>
 						<div><span>Support status</span><strong id="selectedSupportStatus">Loading...</strong></div>
 					</div>
 
-					<section class="detail-section" aria-labelledby="stageProgressHeading">
+					<div class="learner-view-filter">
+						<label for="learnerViewSelector">Choose learner information to view</label>
+						<select id="learnerViewSelector">
+							<option value="">Select a section</option>
+							<option value="stageProgressSection">Programme stage progress</option>
+							<option value="activitySection">Game and assessment activity</option>
+							<option value="bookingsSection">Support bookings</option>
+						</select>
+					</div>
+
+					<section id="stageProgressSection" class="detail-section learner-view-section" aria-labelledby="stageProgressHeading" hidden>
 						<h3 id="stageProgressHeading">Programme stage progress</h3>
-						<div id="stageProgressList" class="stage-progress-list"></div>
+						<div class="stage-progress-filter">
+							<label for="stageProgressSelector">Select a programme stage</label>
+							<select id="stageProgressSelector">
+								<option value="">All stages</option>
+								<option value="html">Stage 1: HTML Quiz</option>
+								<option value="rps">Stage 2: Rock, Paper, Scissors</option>
+								<option value="css">Stage 3: CSS Quiz</option>
+								<option value="chess">Stage 4: Chess</option>
+								<option value="javascript">Stage 5: JavaScript Quiz</option>
+							</select>
+						</div>
+						<ol id="stageProgressList" class="stage-progress-list" aria-label="Programme stages in order"></ol>
 					</section>
 
-					<section class="detail-section" aria-labelledby="activityHeading">
+					<section id="activitySection" class="detail-section learner-view-section" aria-labelledby="activityHeading" hidden>
 						<h3 id="activityHeading">Game and assessment activity</h3>
 						<div id="learnerActivityList" class="activity-list"></div>
 					</section>
 
-					<section class="detail-section" aria-labelledby="bookingsHeading">
+					<section id="bookingsSection" class="detail-section learner-view-section" aria-labelledby="bookingsHeading" hidden>
 						<h3 id="bookingsHeading">Support bookings</h3>
 						<div id="learnerBookingsList" class="activity-list"></div>
 					</section>
 
-					<section class="detail-section booking-section" aria-labelledby="bookSessionHeading">
-						<h3 id="bookSessionHeading">Book a support session</h3>
-						<form id="bookingForm" class="booking-form">
-							<label for="bookingTopic">Session topic</label>
-							<input id="bookingTopic" name="topic" maxlength="100" required placeholder="e.g. Review JavaScript fundamentals">
-							<label for="bookingDate">Preferred date</label>
-							<input id="bookingDate" name="preferredDate" type="date" required>
-							<label for="bookingNotes">Notes for the learner</label>
-							<textarea id="bookingNotes" name="notes" maxlength="500" rows="3" placeholder="Add preparation details or a meeting location"></textarea>
-							<button id="bookSessionButton" type="submit">Book session</button>
-						</form>
-					</section>
+					<div class="learner-tools-grid">
+						<section class="detail-section booking-section" aria-labelledby="bookSessionHeading">
+							<h3 id="bookSessionHeading">Book a support session</h3>
+							<form id="bookingForm" class="booking-form">
+								<label for="bookingTopic">Session topic</label>
+								<input id="bookingTopic" name="topic" maxlength="100" required placeholder="e.g. Review JavaScript fundamentals">
+								<label for="bookingDate">Preferred date</label>
+								<input id="bookingDate" name="preferredDate" type="date" required>
+								<label for="bookingNotes">Notes for the learner</label>
+								<textarea id="bookingNotes" name="notes" maxlength="500" rows="3" placeholder="Add preparation details or a meeting location"></textarea>
+								<button id="bookSessionButton" type="submit">Book session</button>
+							</form>
+						</section>
+
+						<section class="detail-section booking-section" aria-labelledby="assessmentAssignmentHeading">
+							<h3 id="assessmentAssignmentHeading">Assign an assessment</h3>
+							<form id="assessmentAssignmentForm" class="booking-form">
+								<label for="assessmentType">Assessment</label>
+								<select id="assessmentType" name="assessment" required>
+									<option value="skills-assessment">Software Development Skills Assessment</option>
+								</select>
+								<button id="assignAssessmentButton" type="submit">Send assessment</button>
+							</form>
+							<h4 class="assigned-assessments-heading">Assigned assessment status</h4>
+							<div id="assessmentAssignmentsList" class="activity-list" aria-live="polite">
+								<p class="muted">Select a learner to view their assessments.</p>
+							</div>
+						</section>
+					</div>
 				</section>
 
 				<section id="printReport" class="print-report" hidden aria-hidden="true"></section>

@@ -9,6 +9,7 @@ import {
     doc,
     getDoc,
     getDocs,
+    onSnapshot,
     query,
         serverTimestamp,
         updateDoc,
@@ -32,6 +33,7 @@ const learnerList = document.getElementById('learnerList');
 const learnerCount = document.getElementById('learnerCount');
 const learnerDetail = document.getElementById('learnerDetail');
 const bookingForm = document.getElementById('bookingForm');
+const assessmentAssignmentForm = document.getElementById('assessmentAssignmentForm');
 const bookingDateInput = document.getElementById('bookingDate');
 const today = new Date();
 today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
@@ -46,6 +48,7 @@ const stageDefinitions = [
 
 let facilitatorId = null;
 let selectedLearner = null;
+let unsubscribeAssessmentAssignments = null;
 const learnerActivityCache = new Map();
 
 
@@ -143,6 +146,29 @@ const makeSupportBadge = (activity) => {
         return badge;
 };
 
+const makeOverallProgress = (activity) => {
+        const progress = document.createElement('div');
+        progress.className = 'overall-progress';
+
+        const label = document.createElement('span');
+        label.textContent = 'Overall progress';
+        const percentage = Math.round((activity.completedStages / stageDefinitions.length) * 100);
+        const value = document.createElement('strong');
+        value.textContent = `${percentage}%`;
+
+        const bar = document.createElement('progress');
+        bar.className = 'overall-progress-bar';
+        bar.max = stageDefinitions.length;
+        bar.value = activity.completedStages;
+        bar.setAttribute(
+                'aria-label',
+                `Overall programme progress: ${activity.completedStages} of ${stageDefinitions.length} stages complete`
+        );
+
+        progress.append(label, value, bar);
+        return progress;
+};
+
 const displayLearners = (learners) => {
         if (!learnerList) return;
         learnerList.replaceChildren();
@@ -180,24 +206,30 @@ const displayLearners = (learners) => {
                 const progressSummary = document.createElement('p');
                 progressSummary.className = 'muted';
                 progressSummary.textContent = `${learner.activity.completedStages} of ${stageDefinitions.length} stages complete · ${learner.activity.scores.length} recorded activities`;
+                const overallProgress = makeOverallProgress(learner.activity);
                 const viewButton = document.createElement('button');
                 viewButton.type = 'button';
                 viewButton.className = 'learner-open-button';
                 viewButton.textContent = 'View learner activity';
                 viewButton.addEventListener('click', () => openLearnerDetails(learner));
 
-                learnerCard.append(cardHeading, email, programme, progressSummary, viewButton);
+                learnerCard.append(cardHeading, email, programme, progressSummary, overallProgress, viewButton);
                 learnerList.appendChild(learnerCard);
         });
 };
 
-const renderStageProgress = (activity) => {
+const renderStageProgress = (activity, selectedStageKey = '') => {
         const container = document.getElementById('stageProgressList');
         container.replaceChildren();
 
-        stageDefinitions.forEach((stage) => {
-                const row = document.createElement('div');
+        stageDefinitions
+                .filter((stage) => !selectedStageKey || stage.key === selectedStageKey)
+                .forEach((stage) => {
+                const row = document.createElement('li');
                 row.className = 'stage-progress-row';
+                const number = document.createElement('span');
+                number.className = 'stage-number';
+                number.textContent = String(stageDefinitions.indexOf(stage) + 1).padStart(2, '0');
                 const name = document.createElement('span');
                 name.textContent = stage.label;
                 const latestAttempt = activity.latestByStage.get(stage.key);
@@ -223,8 +255,14 @@ const renderStageProgress = (activity) => {
                 printButton.setAttribute('aria-label', `Print ${stage.label} report`);
                 printButton.addEventListener('click', () => printLearnerReport(stage.key));
 
-                row.append(name, status, printButton);
+                row.append(number, name, status, printButton);
                 container.appendChild(row);
+        });
+};
+
+const showLearnerDetailSection = (sectionId) => {
+        document.querySelectorAll('.learner-view-section').forEach((section) => {
+                section.hidden = section.id !== sectionId;
         });
 };
 
@@ -411,21 +449,102 @@ const completeFacilitatorBooking = async (booking, button) => {
         }
 };
 
+const renderAssessmentAssignments = (assignments) => {
+        const container = document.getElementById('assessmentAssignmentsList');
+        container.replaceChildren();
+
+        if (assignments.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = 'No assessments have been assigned to this learner.';
+                container.appendChild(empty);
+                return;
+        }
+
+        assignments.forEach((assignment) => {
+                const item = document.createElement('article');
+                item.className = 'activity-item';
+                const heading = document.createElement('div');
+                heading.className = 'activity-item-heading';
+                const title = document.createElement('h4');
+                title.textContent = 'Software Development Skills Assessment';
+                const status = document.createElement('strong');
+                status.textContent = assignment.status === 'completed' ? 'Completed' : 'Awaiting completion';
+                status.className = assignment.status === 'completed' ? 'stage-complete' : 'stage-pending';
+                heading.append(title, status);
+                const assignedDate = document.createElement('p');
+                assignedDate.textContent = `Assigned ${formatDate(assignment.assignedAt)}`;
+                item.append(heading, assignedDate);
+
+                if (assignment.status === 'completed') {
+                        const completedDate = document.createElement('p');
+                        completedDate.textContent = `Completed ${formatDate(assignment.completedAt)}`;
+                        item.appendChild(completedDate);
+                }
+
+                container.appendChild(item);
+        });
+};
+
+const loadAssessmentAssignments = async (learner) => {
+        const snapshot = await getDocs(query(
+                collection(db, 'assessmentAssignments'),
+                where('userId', '==', learner.id)
+        ));
+        const assignments = snapshot.docs
+                .map((assignmentDocument) => ({ id: assignmentDocument.id, ...assignmentDocument.data() }))
+                .sort((first, second) => dateToMillis(second.assignedAt) - dateToMillis(first.assignedAt));
+        renderAssessmentAssignments(assignments);
+};
+
+const subscribeToAssessmentAssignments = (learner) => {
+        if (unsubscribeAssessmentAssignments) unsubscribeAssessmentAssignments();
+
+        const assignmentsQuery = query(
+                collection(db, 'assessmentAssignments'),
+                where('userId', '==', learner.id)
+        );
+        unsubscribeAssessmentAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+                const assignments = snapshot.docs
+                        .map((assignmentDocument) => ({ id: assignmentDocument.id, ...assignmentDocument.data() }))
+                        .sort((first, second) => dateToMillis(second.assignedAt) - dateToMillis(first.assignedAt));
+                renderAssessmentAssignments(assignments);
+        }, (error) => {
+                console.error('Could not load assessment assignment status:', error);
+                document.getElementById('assessmentAssignmentsList').textContent =
+                        'Assessment assignments could not be loaded. Check facilitator Firestore access.';
+        });
+};
+
 const openLearnerDetails = async (learner) => {
         selectedLearner = learner;
         learnerDetail.hidden = false;
         document.getElementById('selectedLearnerName').textContent = learner.displayName || learner.username || 'Unnamed learner';
         document.getElementById('selectedLearnerMeta').textContent = `${learner.email || 'No email'} · ${learner.programme || 'Programme not specified'}`;
         document.getElementById('stageProgressList').textContent = 'Loading stage progress...';
+        document.getElementById('stageProgressSelector').value = '';
+        document.getElementById('learnerViewSelector').value = '';
+        showLearnerDetailSection('');
         document.getElementById('learnerActivityList').textContent = 'Loading recorded activity...';
         document.getElementById('learnerBookingsList').textContent = 'Loading support bookings...';
+        document.getElementById('assessmentAssignmentsList').textContent = 'Loading assigned assessments...';
+        subscribeToAssessmentAssignments(learner);
         learnerDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         try {
                 const activity = await loadLearnerActivity(learner);
                 learner.activity = activity;
                 learnerActivityCache.set(learner.id, activity);
-                document.getElementById('selectedStageCount').textContent = `${activity.completedStages} / ${stageDefinitions.length}`;
+                document.getElementById('selectedStageCount').textContent = `${activity.completedStages} / ${stageDefinitions.length} stages complete`;
+                const overallProgress = Math.round((activity.completedStages / stageDefinitions.length) * 100);
+                document.getElementById('selectedOverallProgress').textContent = `${overallProgress}%`;
+                const progressBar = document.getElementById('selectedProgressBar');
+                progressBar.max = stageDefinitions.length;
+                progressBar.value = activity.completedStages;
+                progressBar.setAttribute(
+                        'aria-label',
+                        `Overall programme progress: ${activity.completedStages} of ${stageDefinitions.length} stages complete`
+                );
                 document.getElementById('selectedSupportStatus').textContent = activity.supportLabel;
                 document.getElementById('selectedSupportStatus').className = activity.needsSupport ? 'stage-failed' : 'stage-complete';
                 document.getElementById('selectedAssessmentScore').textContent = activity.latestAssessment
@@ -447,11 +566,52 @@ const openLearnerDetails = async (learner) => {
                 console.error('Could not load learner activity:', error);
                 document.getElementById('learnerActivityList').textContent = 'Learner activity could not be loaded. Check facilitator Firestore access.';
                 document.getElementById('learnerBookingsList').textContent = 'Support bookings could not be loaded.';
+                document.getElementById('assessmentAssignmentsList').textContent = 'Assessment assignments could not be loaded.';
                 setMessage('Could not load this learner’s activity.', 'error');
         }
 };
 
 document.getElementById('printFullReport')?.addEventListener('click', () => printLearnerReport());
+
+document.getElementById('stageProgressSelector')?.addEventListener('change', (event) => {
+        if (selectedLearner?.activity) {
+                renderStageProgress(selectedLearner.activity, event.target.value);
+        }
+});
+
+document.getElementById('learnerViewSelector')?.addEventListener('change', (event) => {
+        showLearnerDetailSection(event.target.value);
+});
+
+assessmentAssignmentForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!selectedLearner || !facilitatorId) {
+                setMessage('Select a learner before assigning an assessment.', 'error');
+                return;
+        }
+
+        const submitButton = document.getElementById('assignAssessmentButton');
+        submitButton.disabled = true;
+        try {
+                await addDoc(collection(db, 'assessmentAssignments'), {
+                        userId: selectedLearner.id,
+                        facilitatorId,
+                        assessment: 'skills-assessment',
+                        status: 'assigned',
+                        assignedAt: serverTimestamp()
+                });
+                assessmentAssignmentForm.reset();
+                setMessage('Assessment assigned to the learner.', 'success');
+                await loadAssessmentAssignments(selectedLearner);
+        } catch (error) {
+                console.error('Could not assign assessment:', error);
+                setMessage(error.code === 'permission-denied'
+                        ? 'You do not have permission to assign this assessment.'
+                        : 'Could not assign the assessment. Check your connection and try again.', 'error');
+        } finally {
+                submitButton.disabled = false;
+        }
+});
 
 
 /*
@@ -517,6 +677,10 @@ const loadLearners = async () => {
 };
 
 document.getElementById('closeLearnerDetail')?.addEventListener('click', () => {
+        if (unsubscribeAssessmentAssignments) {
+                unsubscribeAssessmentAssignments();
+                unsubscribeAssessmentAssignments = null;
+        }
         learnerDetail.hidden = true;
         selectedLearner = null;
 });
