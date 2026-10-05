@@ -171,6 +171,7 @@ let stateStorageKey = null;
 let progressManager = new ProgressManager();
 let progressRepository = null;
 let unsubscribeBookings = null;
+let unsubscribeAssignments = null;
 let previewEmpty = false; // [NEW] true while "Preview empty states" is switched on
 
 const stageKeys = ["html", "rps", "css", "chess", "javascript"];
@@ -189,7 +190,7 @@ class LearnerProgressRepository {
     return progressSnapshot.exists() ? progressSnapshot.data() : null;
   }
 
-  async recordResult({ games, stage, score, maxScore, game, assessment }) {
+  async recordResult({ games, stage, score, maxScore, game, assessment, assessmentAssignmentId }) {
     if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore < 1) {
       throw new Error("A valid game score is required before saving progress.");
     }
@@ -203,7 +204,7 @@ class LearnerProgressRepository {
     const batch = writeBatch(this.database);
     const scoreReference = doc(collection(this.database, "scores"));
 
-    batch.set(scoreReference, {
+    const scoreData = {
       userId: this.userId,
       stage: stage || "skills-assessment",
       game,
@@ -214,7 +215,16 @@ class LearnerProgressRepository {
       passed,
       assessment: Boolean(assessment),
       completedAt: serverTimestamp()
-    });
+    };
+    if (assessmentAssignmentId) {
+      scoreData.assessmentAssignmentId = assessmentAssignmentId;
+      batch.update(doc(this.database, "assessmentAssignments", assessmentAssignmentId), {
+        status: "completed",
+        completedAt: serverTimestamp(),
+        scoreId: scoreReference.id
+      });
+    }
+    batch.set(scoreReference, scoreData);
     batch.set(doc(this.database, "learnerProgress", this.userId), {
       userId: this.userId,
       games: nextGames,
@@ -598,7 +608,14 @@ function renderAssessmentProgress(answered = null, total = 5) {
   fill.style.width = `${Math.round((completed / total) * 100)}%`;
 }
 
-async function persistGameResult({ stage, score, maxScore, game, assessment = false }) {
+async function persistGameResult({
+  stage,
+  score,
+  maxScore,
+  game,
+  assessment = false,
+  assessmentAssignmentId = null
+}) {
   const stageNumber = stage ? stageKeys.indexOf(stage) + 1 : null;
   if (stage && (!stageNumber || !progressManager.canStartStage(stageNumber))) {
     throw new Error("Complete the previous stage before starting this one.");
@@ -614,7 +631,8 @@ async function persistGameResult({ stage, score, maxScore, game, assessment = fa
     score,
     maxScore,
     game,
-    assessment
+    assessment,
+    assessmentAssignmentId
   });
 
   state.games = saved.games;
@@ -743,6 +761,165 @@ function subscribeToBookings(userId) {
    [CHANGED] uses getVisibleData() and the .empty-state style
 ========================= */
 
+function subscribeToAssignedAssessments(userId) {
+  if (unsubscribeAssignments) unsubscribeAssignments();
+
+  const assignmentsQuery = query(
+    collection(db, "assessmentAssignments"),
+    where("userId", "==", userId)
+  );
+
+  unsubscribeAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+    const list = document.getElementById("assignedAssessmentsList");
+    const assignments = snapshot.docs
+      .map((assignmentDocument) => ({
+        id: assignmentDocument.id,
+        ...assignmentDocument.data()
+      }))
+      .sort((first, second) => {
+        const firstTime = first.assignedAt?.toMillis?.() || 0;
+        const secondTime = second.assignedAt?.toMillis?.() || 0;
+        return secondTime - firstTime;
+      });
+
+    list.replaceChildren();
+    if (assignments.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "You do not have any facilitator-assigned assessments yet.";
+      list.appendChild(empty);
+      return;
+    }
+
+    assignments.forEach((assignment) => {
+      const item = document.createElement("div");
+      item.className = "assigned-assessment-item";
+      const heading = document.createElement("div");
+      heading.className = "booking-item-heading";
+      const title = document.createElement("strong");
+      title.textContent = "Software Development Skills Assessment";
+      const status = document.createElement("span");
+      status.className = `booking-status ${assignment.status === "completed" ? "completed" : "pending"}`;
+      status.textContent = assignment.status === "completed" ? "Completed" : "Assigned";
+      heading.append(title, status);
+      item.appendChild(heading);
+
+      if (assignment.status === "completed") {
+        const completed = document.createElement("p");
+        const completedAt = assignment.completedAt?.toDate?.();
+        completed.textContent = completedAt
+          ? `Completed on ${completedAt.toLocaleDateString()}`
+          : "Assessment completed";
+        item.appendChild(completed);
+      } else {
+        const startButton = document.createElement("button");
+        startButton.type = "button";
+        startButton.className = "primary-btn small";
+        startButton.textContent = "Start assessment";
+        startButton.addEventListener("click", () => {
+          startQuiz("javascript", {
+            assessment: true,
+            assessmentAssignmentId: assignment.id
+          });
+        });
+        item.appendChild(startButton);
+      }
+
+      list.appendChild(item);
+    });
+  }, (error) => {
+    console.error("Could not load facilitator-assigned assessments:", error);
+    const list = document.getElementById("assignedAssessmentsList");
+    if (list) {
+      list.textContent = "Assigned assessments could not be loaded. Please try again later.";
+    }
+  });
+}
+
+<<<<<<< Updated upstream
+=======
+function subscribeToAssignedAssessments(userId) {
+  if (unsubscribeAssignments) unsubscribeAssignments();
+
+  const assignmentsQuery = query(
+    collection(db, "assessmentAssignments"),
+    where("userId", "==", userId)
+  );
+
+  unsubscribeAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+    const list = document.getElementById("assignedAssessmentsList");
+    const assignments = snapshot.docs
+      .map((assignmentDocument) => ({
+        id: assignmentDocument.id,
+        ...assignmentDocument.data()
+      }))
+      .sort((first, second) => {
+        const firstTime = first.assignedAt?.toMillis?.() || 0;
+        const secondTime = second.assignedAt?.toMillis?.() || 0;
+        return secondTime - firstTime;
+      });
+
+    list.replaceChildren();
+    if (assignments.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "You do not have any facilitator-assigned assessments yet.";
+      list.appendChild(empty);
+      return;
+    }
+
+    assignments.forEach((assignment) => {
+      const item = document.createElement("div");
+      item.className = "assigned-assessment-item";
+      const heading = document.createElement("div");
+      heading.className = "booking-item-heading";
+      const title = document.createElement("strong");
+      title.textContent = "Software Development Skills Assessment";
+      const status = document.createElement("span");
+      status.className = `booking-status ${assignment.status === "completed" ? "completed" : "pending"}`;
+      status.textContent = assignment.status === "completed" ? "Completed" : "Assigned";
+      heading.append(title, status);
+      item.appendChild(heading);
+
+      if (assignment.status === "completed") {
+        const completed = document.createElement("p");
+        const completedAt = assignment.completedAt?.toDate?.();
+        completed.textContent = completedAt
+          ? `Completed on ${completedAt.toLocaleDateString()}`
+          : "Assessment completed";
+        item.appendChild(completed);
+      } else {
+        const startButton = document.createElement("button");
+        startButton.type = "button";
+        startButton.className = "primary-btn small";
+        startButton.textContent = "Start assessment";
+        startButton.addEventListener("click", () => {
+          startQuiz("javascript", {
+            assessment: true,
+            assessmentAssignmentId: assignment.id
+          });
+        });
+        item.appendChild(startButton);
+      }
+
+      list.appendChild(item);
+    });
+  }, (error) => {
+    console.error("Could not load facilitator-assigned assessments:", error);
+    const list = document.getElementById("assignedAssessmentsList");
+    if (list) {
+      list.textContent = "Assigned assessments could not be loaded. Please try again later.";
+    }
+  });
+}
+
+
+/* =========================
+   RENDER TASKS
+   [CHANGED] uses getVisibleData() and the .empty-state style
+========================= */
+
+>>>>>>> Stashed changes
 function renderTasks() {
   const list = document.getElementById("tasksList");
   const tasks = getVisibleData().tasks; // [NEW]
@@ -1038,7 +1215,10 @@ document
    START QUIZ
 ========================= */
 
-function startQuiz(stage = "javascript", { assessment = false } = {}) {
+function startQuiz(stage = "javascript", {
+  assessment = false,
+  assessmentAssignmentId = null
+} = {}) {
   const stageNumber = stageKeys.indexOf(stage) + 1;
   if (!assessment && !progressManager.canStartStage(stageNumber)) {
     showStageLockedMessage(stage);
@@ -1121,7 +1301,8 @@ function startQuiz(stage = "javascript", { assessment = false } = {}) {
             score,
             maxScore: questions.length,
             game: title,
-            assessment
+            assessment,
+            assessmentAssignmentId
           });
         } catch (error) {
           console.error("Could not save learner score:", error);
@@ -1739,6 +1920,10 @@ onAuthStateChanged(auth, async (user) => {
       unsubscribeBookings();
       unsubscribeBookings = null;
     }
+    if (unsubscribeAssignments) {
+      unsubscribeAssignments();
+      unsubscribeAssignments = null;
+    }
     window.location.href = "../../login-page/login.html";
     return;
   }
@@ -1783,6 +1968,7 @@ onAuthStateChanged(auth, async (user) => {
     renderGoals();
     renderBookings();
     subscribeToBookings(user.uid);
+    subscribeToAssignedAssessments(user.uid);
     renderTasks();
     renderStageButtons();
     renderAssessmentProgress();
