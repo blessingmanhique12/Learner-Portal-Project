@@ -118,4 +118,3 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 - Firestore rules must allow learners to create documents in `bookings` (and in `scores` and `learnerProgress` for the quiz).
 - Quiz behaviour depends on `QuizGame.js` and `ProgressManager.js`, which haven't been reviewed yet.
  
-
