@@ -18,83 +18,70 @@ import {
 
 import { auth, db } from "../FirebaseAuth/firebase.js";
 
+class FacilitatorDashboard {
+    constructor() {
+        this.loginPath = '../login-page/login.html';
 
-/*
- * Dashboard elements
- */
-const loginPath = '../login-page/login.html';
+        this.welcome = document.getElementById('facilitatorWelcome');
+        this.roleValue = document.getElementById('roleValue');
+        this.message = document.getElementById('dashboardMessage');
+        this.logoutButton = document.getElementById('logoutButton');
 
-const welcome = document.getElementById('facilitatorWelcome');
-const roleValue = document.getElementById('roleValue');
-const message = document.getElementById('dashboardMessage');
-const logoutButton = document.getElementById('logoutButton');
+        this.learnerList = document.getElementById('learnerList');
+        this.learnerCount = document.getElementById('learnerCount');
+        this.learnerDetail = document.getElementById('learnerDetail');
+        this.bookingForm = document.getElementById('bookingForm');
+        this.assessmentAssignmentForm = document.getElementById('assessmentAssignmentForm');
+        this.bookingDateInput = document.getElementById('bookingDate');
+        const today = new Date();
+        today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+        if (this.bookingDateInput) this.bookingDateInput.min = today.toISOString().slice(0, 10);
+        this.stageDefinitions = [
+                { key: 'html', label: 'Stage 1: HTML Quiz' },
+                { key: 'rps', label: 'Stage 2: Rock, Paper, Scissors' },
+                { key: 'css', label: 'Stage 3: CSS Quiz' },
+                { key: 'chess', label: 'Stage 4: Chess' },
+                { key: 'javascript', label: 'Stage 5: JavaScript Quiz' }
+        ];
 
-const learnerList = document.getElementById('learnerList');
-const learnerCount = document.getElementById('learnerCount');
-const learnerDetail = document.getElementById('learnerDetail');
-const bookingForm = document.getElementById('bookingForm');
-const assessmentAssignmentForm = document.getElementById('assessmentAssignmentForm');
-const bookingDateInput = document.getElementById('bookingDate');
-const today = new Date();
-today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-if (bookingDateInput) bookingDateInput.min = today.toISOString().slice(0, 10);
-const stageDefinitions = [
-        { key: 'html', label: 'Stage 1: HTML Quiz' },
-        { key: 'rps', label: 'Stage 2: Rock, Paper, Scissors' },
-        { key: 'css', label: 'Stage 3: CSS Quiz' },
-        { key: 'chess', label: 'Stage 4: Chess' },
-        { key: 'javascript', label: 'Stage 5: JavaScript Quiz' }
-];
+        this.facilitatorId = null;
+        this.selectedLearner = null;
+        this.unsubscribeAssessmentAssignments = null;
+        this.learnerActivityCache = new Map();
 
-let facilitatorId = null;
-let selectedLearner = null;
-let unsubscribeAssessmentAssignments = null;
-const learnerActivityCache = new Map();
+        this.init();
+    }
 
-
-/*
- * Display a dashboard message
- */
-const setMessage = (text, type = '') => {
-        if (!message) {
+    setMessage = (text, type = '') => {
+        if (!this.message) {
                 return;
         }
 
-        message.textContent = text;
-        message.className = type
+        this.message.textContent = text;
+        this.message.className = type
                 ? `message ${type}`
                 : 'message';
-};
-
-
-/*
- * Send the user back to the login page
- */
-const redirectToLogin = () => {
+    };
+    redirectToLogin = () => {
         localStorage.removeItem('learnerHubUser');
-        window.location.href = loginPath;
-};
-
-
-const stageLabel = (stage) =>
-        stageDefinitions.find((item) => item.key === stage)?.label || stage;
-
-const dateToMillis = (dateValue) => {
+        window.location.href = this.loginPath;
+    };
+    stageLabel = (stage) =>
+        this.stageDefinitions.find((item) => item.key === stage)?.label || stage;
+    dateToMillis = (dateValue) => {
         if (!dateValue) return 0;
         if (typeof dateValue.toMillis === 'function') return dateValue.toMillis();
         const parsedDate = new Date(dateValue).getTime();
         return Number.isFinite(parsedDate) ? parsedDate : 0;
-};
-
-const formatDate = (dateValue) => {
-        const timestamp = dateToMillis(dateValue);
+    };
+    formatDate = (dateValue) => {
+        const timestamp = this.dateToMillis(dateValue);
         return timestamp ? new Intl.DateTimeFormat(undefined, {
                 dateStyle: 'medium',
                 timeStyle: 'short'
         }).format(timestamp) : 'Date not recorded';
-};
-
-const loadLearnerActivity = async (learner) => {
+    };
+    loadLearnerActivity = async (learner) => {
         const [progressSnapshot, scoresSnapshot] = await Promise.all([
                 getDoc(doc(db, 'learnerProgress', learner.id)),
                 getDocs(query(collection(db, 'scores'), where('userId', '==', learner.id)))
@@ -104,7 +91,7 @@ const loadLearnerActivity = async (learner) => {
         const games = progressData.games || {};
         const scores = scoresSnapshot.docs
                 .map((scoreDocument) => ({ id: scoreDocument.id, ...scoreDocument.data() }))
-                .sort((first, second) => dateToMillis(second.completedAt) - dateToMillis(first.completedAt));
+                .sort((first, second) => this.dateToMillis(second.completedAt) - this.dateToMillis(first.completedAt));
         const latestByStage = new Map();
 
         scores.forEach((score) => {
@@ -113,11 +100,11 @@ const loadLearnerActivity = async (learner) => {
                 }
         });
 
-        const completedStages = stageDefinitions.filter((stage) => games[stage.key] === true).length;
+        const completedStages = this.stageDefinitions.filter((stage) => games[stage.key] === true).length;
         const unresolvedFailure = [...latestByStage.entries()].some(([stage, score]) =>
                 score.passed === false && games[stage] !== true
         );
-        const accountCreatedAt = dateToMillis(learner.createdAt);
+        const accountCreatedAt = this.dateToMillis(learner.createdAt);
         const hasBeenInactive = completedStages === 0
                 && scores.length === 0
                 && accountCreatedAt > 0
@@ -133,47 +120,44 @@ const loadLearnerActivity = async (learner) => {
                 latestByStage,
                 latestAssessment,
                 needsSupport,
-                supportLabel: needsSupport ? 'Needs support' : completedStages === stageDefinitions.length
+                supportLabel: needsSupport ? 'Needs support' : completedStages === this.stageDefinitions.length
                         ? 'Stages complete'
                         : scores.length ? 'In progress' : 'No activity'
         };
-};
-
-const makeSupportBadge = (activity) => {
+    };
+    makeSupportBadge = (activity) => {
         const badge = document.createElement('span');
         badge.className = `support-badge ${activity.needsSupport ? 'needs-support' : 'on-track'}`;
         badge.textContent = activity.supportLabel;
         return badge;
-};
-
-const makeOverallProgress = (activity) => {
+    };
+    makeOverallProgress = (activity) => {
         const progress = document.createElement('div');
         progress.className = 'overall-progress';
 
         const label = document.createElement('span');
         label.textContent = 'Overall progress';
-        const percentage = Math.round((activity.completedStages / stageDefinitions.length) * 100);
+        const percentage = Math.round((activity.completedStages / this.stageDefinitions.length) * 100);
         const value = document.createElement('strong');
         value.textContent = `${percentage}%`;
 
         const bar = document.createElement('progress');
         bar.className = 'overall-progress-bar';
-        bar.max = stageDefinitions.length;
+        bar.max = this.stageDefinitions.length;
         bar.value = activity.completedStages;
         bar.setAttribute(
                 'aria-label',
-                `Overall programme progress: ${activity.completedStages} of ${stageDefinitions.length} stages complete`
+                `Overall programme progress: ${activity.completedStages} of ${this.stageDefinitions.length} stages complete`
         );
 
         progress.append(label, value, bar);
         return progress;
-};
+    };
+    displayLearners = (learners) => {
+        if (!this.learnerList) return;
+        this.learnerList.replaceChildren();
 
-const displayLearners = (learners) => {
-        if (!learnerList) return;
-        learnerList.replaceChildren();
-
-        if (learnerCount) learnerCount.textContent = `${learners.length} learner${learners.length === 1 ? '' : 's'}`;
+        if (this.learnerCount) this.learnerCount.textContent = `${learners.length} learner${learners.length === 1 ? '' : 's'}`;
         const totalElement = document.getElementById('learnerTotal');
         const supportElement = document.getElementById('supportNeededTotal');
         if (totalElement) totalElement.textContent = String(learners.length);
@@ -185,7 +169,7 @@ const displayLearners = (learners) => {
                 const emptyMessage = document.createElement('p');
                 emptyMessage.className = 'muted';
                 emptyMessage.textContent = 'No learners are currently registered.';
-                learnerList.appendChild(emptyMessage);
+                this.learnerList.appendChild(emptyMessage);
                 return;
         }
 
@@ -197,7 +181,7 @@ const displayLearners = (learners) => {
                 cardHeading.className = 'learner-card-heading';
                 const name = document.createElement('h3');
                 name.textContent = learner.displayName || learner.username || 'Unnamed learner';
-                cardHeading.append(name, makeSupportBadge(learner.activity));
+                cardHeading.append(name, this.makeSupportBadge(learner.activity));
 
                 const email = document.createElement('p');
                 email.textContent = learner.email || 'No email available';
@@ -205,31 +189,30 @@ const displayLearners = (learners) => {
                 programme.textContent = learner.programme || 'Programme not specified';
                 const progressSummary = document.createElement('p');
                 progressSummary.className = 'muted';
-                progressSummary.textContent = `${learner.activity.completedStages} of ${stageDefinitions.length} stages complete · ${learner.activity.scores.length} recorded activities`;
-                const overallProgress = makeOverallProgress(learner.activity);
+                progressSummary.textContent = `${learner.activity.completedStages} of ${this.stageDefinitions.length} stages complete · ${learner.activity.scores.length} recorded activities`;
+                const overallProgress = this.makeOverallProgress(learner.activity);
                 const viewButton = document.createElement('button');
                 viewButton.type = 'button';
                 viewButton.className = 'learner-open-button';
                 viewButton.textContent = 'View learner activity';
-                viewButton.addEventListener('click', () => openLearnerDetails(learner));
+                viewButton.addEventListener('click', () => this.openLearnerDetails(learner));
 
                 learnerCard.append(cardHeading, email, programme, progressSummary, overallProgress, viewButton);
-                learnerList.appendChild(learnerCard);
+                this.learnerList.appendChild(learnerCard);
         });
-};
-
-const renderStageProgress = (activity, selectedStageKey = '') => {
+    };
+    renderStageProgress = (activity, selectedStageKey = '') => {
         const container = document.getElementById('stageProgressList');
         container.replaceChildren();
 
-        stageDefinitions
+        this.stageDefinitions
                 .filter((stage) => !selectedStageKey || stage.key === selectedStageKey)
                 .forEach((stage) => {
                 const row = document.createElement('li');
                 row.className = 'stage-progress-row';
                 const number = document.createElement('span');
                 number.className = 'stage-number';
-                number.textContent = String(stageDefinitions.indexOf(stage) + 1).padStart(2, '0');
+                number.textContent = String(this.stageDefinitions.indexOf(stage) + 1).padStart(2, '0');
                 const name = document.createElement('span');
                 name.textContent = stage.label;
                 const latestAttempt = activity.latestByStage.get(stage.key);
@@ -253,51 +236,48 @@ const renderStageProgress = (activity, selectedStageKey = '') => {
                 printButton.className = 'stage-print-button';
                 printButton.textContent = 'Print PDF';
                 printButton.setAttribute('aria-label', `Print ${stage.label} report`);
-                printButton.addEventListener('click', () => printLearnerReport(stage.key));
+                printButton.addEventListener('click', () => this.printLearnerReport(stage.key));
 
                 row.append(number, name, status, printButton);
                 container.appendChild(row);
         });
-};
-
-const showLearnerDetailSection = (sectionId) => {
+    };
+    showLearnerDetailSection = (sectionId) => {
         document.querySelectorAll('.learner-view-section').forEach((section) => {
                 section.hidden = section.id !== sectionId;
         });
-};
-
-const escapeReportValue = (value) => String(value ?? '')
+    };
+    escapeReportValue = (value) => String(value ?? '')
         .replaceAll('&', '&amp;')
         .replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
-
-const printLearnerReport = (stageKey = null) => {
-        if (!selectedLearner?.activity) {
-                setMessage('Select a learner and load their activity before printing a report.', 'error');
+    printLearnerReport = (stageKey = null) => {
+        if (!this.selectedLearner?.activity) {
+                this.setMessage('Select a learner and load their activity before printing a report.', 'error');
                 return;
         }
 
-        const activity = selectedLearner.activity;
-        const learnerName = selectedLearner.displayName || selectedLearner.username || 'Unnamed learner';
-        const learnerEmail = selectedLearner.email || 'No email available';
-        const stage = stageKey ? stageDefinitions.find((item) => item.key === stageKey) : null;
+        const activity = this.selectedLearner.activity;
+        const learnerName = this.selectedLearner.displayName || this.selectedLearner.username || 'Unnamed learner';
+        const learnerEmail = this.selectedLearner.email || 'No email available';
+        const stage = stageKey ? this.stageDefinitions.find((item) => item.key === stageKey) : null;
         const reportTitle = stage ? `${stage.label} Report` : 'Full Learner Progress Report';
         const reportScores = stage
                 ? activity.scores.filter((score) => score.stage === stage.key)
                 : activity.scores;
-        const reportStages = stage ? stageDefinitions.filter((item) => item.key === stage.key) : stageDefinitions;
+        const reportStages = stage ? this.stageDefinitions.filter((item) => item.key === stage.key) : this.stageDefinitions;
         const scoreRows = reportScores.length
                 ? reportScores.map((score) => `
                         <tr>
-                                <td>${escapeReportValue(score.game || stageLabel(score.stage))}</td>
-                                <td>${escapeReportValue(score.score ?? 0)} / ${escapeReportValue(score.maxScore ?? 0)}</td>
-                                <td>${escapeReportValue(score.percentage ?? 0)}%</td>
-                                <td>${escapeReportValue(score.assessment || score.stage === 'skills-assessment'
+                                <td>${this.escapeReportValue(score.game || this.stageLabel(score.stage))}</td>
+                                <td>${this.escapeReportValue(score.score ?? 0)} / ${this.escapeReportValue(score.maxScore ?? 0)}</td>
+                                <td>${this.escapeReportValue(score.percentage ?? 0)}%</td>
+                                <td>${this.escapeReportValue(score.assessment || score.stage === 'skills-assessment'
                                         ? 'Assessment'
                                         : score.passed === true ? 'Passed' : score.passed === false ? 'Failed' : 'Attempt')}</td>
-                                <td>${escapeReportValue(formatDate(score.completedAt))}</td>
+                                <td>${this.escapeReportValue(this.formatDate(score.completedAt))}</td>
                         </tr>
                 `).join('')
                 : '<tr><td colspan="5">No recorded attempts.</td></tr>';
@@ -307,16 +287,16 @@ const printLearnerReport = (stageKey = null) => {
                 const status = completed
                         ? `Complete${latestAttempt ? ` · latest score ${latestAttempt.percentage}%` : ''}`
                         : latestAttempt ? `Incomplete · latest score ${latestAttempt.percentage}%` : 'Not started';
-                return `<tr><td>${escapeReportValue(item.label)}</td><td>${escapeReportValue(status)}</td></tr>`;
+                return `<tr><td>${this.escapeReportValue(item.label)}</td><td>${this.escapeReportValue(status)}</td></tr>`;
         }).join('');
-        const reportBookings = stage ? [] : (selectedLearner.bookings || []);
+        const reportBookings = stage ? [] : (this.selectedLearner.bookings || []);
         const bookingRows = reportBookings.length
                 ? reportBookings.map((booking) => `
                         <tr>
-                                <td>${escapeReportValue(booking.topic || 'Support session')}</td>
-                                <td>${escapeReportValue(booking.preferredDate || 'To be arranged')}</td>
-                                <td>${escapeReportValue(booking.status || 'pending')}</td>
-                                <td>${escapeReportValue(booking.notes || 'No notes')}</td>
+                                <td>${this.escapeReportValue(booking.topic || 'Support session')}</td>
+                                <td>${this.escapeReportValue(booking.preferredDate || 'To be arranged')}</td>
+                                <td>${this.escapeReportValue(booking.status || 'pending')}</td>
+                                <td>${this.escapeReportValue(booking.notes || 'No notes')}</td>
                         </tr>
                 `).join('')
                 : '<tr><td colspan="4">No support sessions recorded.</td></tr>';
@@ -325,11 +305,11 @@ const printLearnerReport = (stageKey = null) => {
         printTarget.innerHTML = `
                 <header class="print-report-header">
                         <p class="print-report-brand">LearnerHub · Facilitator Report</p>
-                        <h1>${escapeReportValue(reportTitle)}</h1>
-                        <p><strong>Learner:</strong> ${escapeReportValue(learnerName)}</p>
-                        <p><strong>Email:</strong> ${escapeReportValue(learnerEmail)}</p>
-                        <p><strong>Programme:</strong> ${escapeReportValue(selectedLearner.programme || 'Not specified')}</p>
-                        <p><strong>Generated:</strong> ${escapeReportValue(formatDate(new Date()))}</p>
+                        <h1>${this.escapeReportValue(reportTitle)}</h1>
+                        <p><strong>Learner:</strong> ${this.escapeReportValue(learnerName)}</p>
+                        <p><strong>Email:</strong> ${this.escapeReportValue(learnerEmail)}</p>
+                        <p><strong>Programme:</strong> ${this.escapeReportValue(this.selectedLearner.programme || 'Not specified')}</p>
+                        <p><strong>Generated:</strong> ${this.escapeReportValue(this.formatDate(new Date()))}</p>
                 </header>
                 <section>
                         <h2>${stage ? 'Stage status' : 'Programme stage progress'}</h2>
@@ -357,9 +337,8 @@ const printLearnerReport = (stageKey = null) => {
                 document.title = previousTitle;
         }, { once: true });
         window.print();
-};
-
-const renderActivities = (scores) => {
+    };
+    renderActivities = (scores) => {
         const container = document.getElementById('learnerActivityList');
         container.replaceChildren();
 
@@ -377,7 +356,7 @@ const renderActivities = (scores) => {
                 const heading = document.createElement('div');
                 heading.className = 'activity-item-heading';
                 const title = document.createElement('h4');
-                title.textContent = score.game || stageLabel(score.stage);
+                title.textContent = score.game || this.stageLabel(score.stage);
                 const result = document.createElement('strong');
                 result.textContent = score.assessment || score.stage === 'skills-assessment'
                         ? 'Assessment'
@@ -385,13 +364,12 @@ const renderActivities = (scores) => {
                 result.className = score.passed === false ? 'stage-failed' : 'stage-complete';
                 heading.append(title, result);
                 const detail = document.createElement('p');
-                detail.textContent = `${score.score ?? 0} / ${score.maxScore ?? 0} · ${score.percentage ?? 0}% · ${formatDate(score.completedAt)}`;
+                detail.textContent = `${score.score ?? 0} / ${score.maxScore ?? 0} · ${score.percentage ?? 0}% · ${this.formatDate(score.completedAt)}`;
                 item.append(heading, detail);
                 container.appendChild(item);
         });
-};
-
-const renderBookings = (bookings) => {
+    };
+    renderBookings = (bookings) => {
         const container = document.getElementById('learnerBookingsList');
         container.replaceChildren();
 
@@ -421,35 +399,33 @@ const renderBookings = (bookings) => {
                         completeButton.type = 'button';
                         completeButton.className = 'complete-booking-button';
                         completeButton.textContent = 'Mark session complete';
-                        completeButton.addEventListener('click', () => completeFacilitatorBooking(booking, completeButton));
+                        completeButton.addEventListener('click', () => this.completeFacilitatorBooking(booking, completeButton));
                         item.appendChild(completeButton);
                 }
                 container.appendChild(item);
         });
-};
-
-const completeFacilitatorBooking = async (booking, button) => {
-        if (!selectedLearner || !facilitatorId) return;
+    };
+    completeFacilitatorBooking = async (booking, button) => {
+        if (!this.selectedLearner || !this.facilitatorId) return;
 
         button.disabled = true;
         try {
                 await updateDoc(doc(db, 'bookings', booking.id), {
                         status: 'completed',
                         completedAt: serverTimestamp(),
-                        completedBy: facilitatorId
+                        completedBy: this.facilitatorId
                 });
-                setMessage('Support session marked complete.', 'success');
-                await openLearnerDetails(selectedLearner);
+                this.setMessage('Support session marked complete.', 'success');
+                await this.openLearnerDetails(this.selectedLearner);
         } catch (error) {
                 console.error('Could not complete the booked session:', error);
                 button.disabled = false;
-                setMessage(error.code === 'permission-denied'
+                this.setMessage(error.code === 'permission-denied'
                         ? 'Only the booked learner or assigned facilitator can complete this session.'
                         : 'Could not complete this session. Check your connection and try again.', 'error');
         }
-};
-
-const renderAssessmentAssignments = (assignments) => {
+    };
+    renderAssessmentAssignments = (assignments) => {
         const container = document.getElementById('assessmentAssignmentsList');
         container.replaceChildren();
 
@@ -473,85 +449,84 @@ const renderAssessmentAssignments = (assignments) => {
                 status.className = assignment.status === 'completed' ? 'stage-complete' : 'stage-pending';
                 heading.append(title, status);
                 const assignedDate = document.createElement('p');
-                assignedDate.textContent = `Assigned ${formatDate(assignment.assignedAt)}`;
+                assignedDate.textContent = `Assigned ${this.formatDate(assignment.assignedAt)}`;
                 item.append(heading, assignedDate);
 
                 if (assignment.status === 'completed') {
                         const completedDate = document.createElement('p');
-                        completedDate.textContent = `Completed ${formatDate(assignment.completedAt)}`;
+                        completedDate.textContent = `Completed ${this.formatDate(assignment.completedAt)}`;
                         item.appendChild(completedDate);
                 }
 
                 container.appendChild(item);
         });
-};
-
-const loadAssessmentAssignments = async (learner) => {
+    };
+    loadAssessmentAssignments = async (learner) => {
         const snapshot = await getDocs(query(
                 collection(db, 'assessmentAssignments'),
                 where('userId', '==', learner.id)
         ));
         const assignments = snapshot.docs
                 .map((assignmentDocument) => ({ id: assignmentDocument.id, ...assignmentDocument.data() }))
-                .sort((first, second) => dateToMillis(second.assignedAt) - dateToMillis(first.assignedAt));
-        renderAssessmentAssignments(assignments);
-};
-
-const subscribeToAssessmentAssignments = (learner) => {
-        if (unsubscribeAssessmentAssignments) unsubscribeAssessmentAssignments();
+                .sort((first, second) => this.dateToMillis(second.assignedAt) - this.dateToMillis(first.assignedAt));
+        this.renderAssessmentAssignments(assignments);
+    };
+    subscribeToAssessmentAssignments = (learner) => {
+        if (this.unsubscribeAssessmentAssignments) this.unsubscribeAssessmentAssignments();
 
         const assignmentsQuery = query(
                 collection(db, 'assessmentAssignments'),
                 where('userId', '==', learner.id)
         );
-        unsubscribeAssessmentAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
+        this.unsubscribeAssessmentAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
                 const assignments = snapshot.docs
                         .map((assignmentDocument) => ({ id: assignmentDocument.id, ...assignmentDocument.data() }))
-                        .sort((first, second) => dateToMillis(second.assignedAt) - dateToMillis(first.assignedAt));
-                renderAssessmentAssignments(assignments);
+                        .sort((first, second) => this.dateToMillis(second.assignedAt) - this.dateToMillis(first.assignedAt));
+                this.renderAssessmentAssignments(assignments);
         }, (error) => {
                 console.error('Could not load assessment assignment status:', error);
                 document.getElementById('assessmentAssignmentsList').textContent =
-                        'Assessment assignments could not be loaded. Check facilitator Firestore access.';
+                        error.code === 'permission-denied'
+                                ? 'Assessment status access was denied. Publish the latest firestore.rules and confirm this account has the facilitator role.'
+                                : 'Assessment assignments could not be loaded. Check your connection and try again.';
         });
-};
-
-const openLearnerDetails = async (learner) => {
-        selectedLearner = learner;
-        learnerDetail.hidden = false;
+    };
+    openLearnerDetails = async (learner) => {
+        this.selectedLearner = learner;
+        this.learnerDetail.hidden = false;
         document.getElementById('selectedLearnerName').textContent = learner.displayName || learner.username || 'Unnamed learner';
         document.getElementById('selectedLearnerMeta').textContent = `${learner.email || 'No email'} · ${learner.programme || 'Programme not specified'}`;
         document.getElementById('stageProgressList').textContent = 'Loading stage progress...';
         document.getElementById('stageProgressSelector').value = '';
         document.getElementById('learnerViewSelector').value = '';
-        showLearnerDetailSection('');
+        this.showLearnerDetailSection('');
         document.getElementById('learnerActivityList').textContent = 'Loading recorded activity...';
         document.getElementById('learnerBookingsList').textContent = 'Loading support bookings...';
         document.getElementById('assessmentAssignmentsList').textContent = 'Loading assigned assessments...';
-        subscribeToAssessmentAssignments(learner);
-        learnerDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        this.subscribeToAssessmentAssignments(learner);
+        this.learnerDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         try {
-                const activity = await loadLearnerActivity(learner);
+                const activity = await this.loadLearnerActivity(learner);
                 learner.activity = activity;
-                learnerActivityCache.set(learner.id, activity);
-                document.getElementById('selectedStageCount').textContent = `${activity.completedStages} / ${stageDefinitions.length} stages complete`;
-                const overallProgress = Math.round((activity.completedStages / stageDefinitions.length) * 100);
+                this.learnerActivityCache.set(learner.id, activity);
+                document.getElementById('selectedStageCount').textContent = `${activity.completedStages} / ${this.stageDefinitions.length} stages complete`;
+                const overallProgress = Math.round((activity.completedStages / this.stageDefinitions.length) * 100);
                 document.getElementById('selectedOverallProgress').textContent = `${overallProgress}%`;
                 const progressBar = document.getElementById('selectedProgressBar');
-                progressBar.max = stageDefinitions.length;
+                progressBar.max = this.stageDefinitions.length;
                 progressBar.value = activity.completedStages;
                 progressBar.setAttribute(
                         'aria-label',
-                        `Overall programme progress: ${activity.completedStages} of ${stageDefinitions.length} stages complete`
+                        `Overall programme progress: ${activity.completedStages} of ${this.stageDefinitions.length} stages complete`
                 );
                 document.getElementById('selectedSupportStatus').textContent = activity.supportLabel;
                 document.getElementById('selectedSupportStatus').className = activity.needsSupport ? 'stage-failed' : 'stage-complete';
                 document.getElementById('selectedAssessmentScore').textContent = activity.latestAssessment
-                        ? `${activity.latestAssessment.percentage}% · ${formatDate(activity.latestAssessment.completedAt)}`
+                        ? `${activity.latestAssessment.percentage}% · ${this.formatDate(activity.latestAssessment.completedAt)}`
                         : 'No attempt';
-                renderStageProgress(activity);
-                renderActivities(activity.scores);
+                this.renderStageProgress(activity);
+                this.renderActivities(activity.scores);
 
                 const bookingsSnapshot = await getDocs(query(
                         collection(db, 'bookings'),
@@ -561,91 +536,33 @@ const openLearnerDetails = async (learner) => {
                         .map((bookingDocument) => ({ id: bookingDocument.id, ...bookingDocument.data() }))
                         .sort((first, second) => (first.preferredDate || '').localeCompare(second.preferredDate || ''));
                 learner.bookings = bookings;
-                renderBookings(bookings);
+                this.renderBookings(bookings);
         } catch (error) {
                 console.error('Could not load learner activity:', error);
                 document.getElementById('learnerActivityList').textContent = 'Learner activity could not be loaded. Check facilitator Firestore access.';
                 document.getElementById('learnerBookingsList').textContent = 'Support bookings could not be loaded.';
                 document.getElementById('assessmentAssignmentsList').textContent = 'Assessment assignments could not be loaded.';
-                setMessage('Could not load this learner’s activity.', 'error');
+                this.setMessage('Could not load this learner’s activity.', 'error');
         }
-};
+    };
+    loadLearners = async () => {
 
-document.getElementById('printFullReport')?.addEventListener('click', () => printLearnerReport());
-
-document.getElementById('stageProgressSelector')?.addEventListener('change', (event) => {
-        if (selectedLearner?.activity) {
-                renderStageProgress(selectedLearner.activity, event.target.value);
-        }
-});
-
-document.getElementById('learnerViewSelector')?.addEventListener('change', (event) => {
-        showLearnerDetailSection(event.target.value);
-});
-
-assessmentAssignmentForm?.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (!selectedLearner || !facilitatorId) {
-                setMessage('Select a learner before assigning an assessment.', 'error');
+        if (!this.learnerList) {
                 return;
         }
 
-        const submitButton = document.getElementById('assignAssessmentButton');
-        submitButton.disabled = true;
-        try {
-                await addDoc(collection(db, 'assessmentAssignments'), {
-                        userId: selectedLearner.id,
-                        facilitatorId,
-                        assessment: 'skills-assessment',
-                        status: 'assigned',
-                        assignedAt: serverTimestamp()
-                });
-                assessmentAssignmentForm.reset();
-                setMessage('Assessment assigned to the learner.', 'success');
-                await loadAssessmentAssignments(selectedLearner);
-        } catch (error) {
-                console.error('Could not assign assessment:', error);
-                setMessage(error.code === 'permission-denied'
-                        ? 'You do not have permission to assign this assessment.'
-                        : 'Could not assign the assessment. Check your connection and try again.', 'error');
-        } finally {
-                submitButton.disabled = false;
-        }
-});
-
-
-/*
- * Load all learner profiles from Firestore
- *
- * IMPORTANT:
- * We specifically request documents where:
- *
- * role == "learner"
- *
- * Therefore facilitator profiles are not included
- * in the learner list.
- */
-const loadLearners = async () => {
-
-        if (!learnerList) {
-                return;
-        }
-
-        learnerList.innerHTML = `
+        this.learnerList.innerHTML = `
                 <p class="muted">
                         Loading learners...
                 </p>
         `;
-
 
         const learnersQuery = query(
                 collection(db, 'registrations'),
                 where('role', '==', 'learner')
         );
 
-
         const learnersSnapshot = await getDocs(learnersQuery);
-
 
         const learners = learnersSnapshot.docs.map((learnerDocument) => ({
                 id: learnerDocument.id,
@@ -654,8 +571,8 @@ const loadLearners = async () => {
 
         const learnersWithActivity = await Promise.all(learners.map(async (learner) => {
                 try {
-                        const activity = learnerActivityCache.get(learner.id) || await loadLearnerActivity(learner);
-                        learnerActivityCache.set(learner.id, activity);
+                        const activity = this.learnerActivityCache.get(learner.id) || await this.loadLearnerActivity(learner);
+                        this.learnerActivityCache.set(learner.id, activity);
                         return { ...learner, activity };
                 } catch (error) {
                         console.error(`Could not load activity summary for ${learner.id}:`, error);
@@ -673,211 +590,212 @@ const loadLearners = async () => {
                 }
         }));
 
-        displayLearners(learnersWithActivity);
-};
+        this.displayLearners(learnersWithActivity);
+    };
 
-document.getElementById('closeLearnerDetail')?.addEventListener('click', () => {
-        if (unsubscribeAssessmentAssignments) {
-                unsubscribeAssessmentAssignments();
-                unsubscribeAssessmentAssignments = null;
-        }
-        learnerDetail.hidden = true;
-        selectedLearner = null;
-});
+    init() {
+        document.getElementById('printFullReport')?.addEventListener('click', () => this.printLearnerReport());
 
-bookingForm?.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        if (!selectedLearner || !facilitatorId) {
-                setMessage('Select a learner before booking a support session.', 'error');
-                return;
-        }
+        document.getElementById('stageProgressSelector')?.addEventListener('change', (event) => {
+                if (this.selectedLearner?.activity) {
+                        this.renderStageProgress(this.selectedLearner.activity, event.target.value);
+                }
+        });
 
-        if (!bookingForm.reportValidity()) return;
+        document.getElementById('learnerViewSelector')?.addEventListener('change', (event) => {
+                this.showLearnerDetailSection(event.target.value);
+        });
 
-        const submitButton = document.getElementById('bookSessionButton');
-        const topic = document.getElementById('bookingTopic').value.trim();
-        const preferredDate = document.getElementById('bookingDate').value;
-        const notes = document.getElementById('bookingNotes').value.trim();
-        if (!topic || !preferredDate) {
-                setMessage('Enter a topic and preferred session date.', 'error');
-                return;
-        }
-
-        submitButton.disabled = true;
-        try {
-                await addDoc(collection(db, 'bookings'), {
-                        userId: selectedLearner.id,
-                        learnerName: selectedLearner.displayName || selectedLearner.username || 'Learner',
-                        facilitatorId,
-                        createdBy: facilitatorId,
-                        topic,
-                        preferredDate,
-                        notes,
-                        status: 'pending',
-                        createdAt: serverTimestamp()
-                });
-
-                bookingForm.reset();
-                setMessage(`Support session booked for ${selectedLearner.displayName || selectedLearner.username || 'the learner'}.`, 'success');
-                await openLearnerDetails(selectedLearner);
-        } catch (error) {
-                console.error('Could not book learner support session:', error);
-                setMessage(error.code === 'permission-denied'
-                        ? 'Firebase rules blocked this booking. Confirm the latest Firestore rules are published.'
-                        : 'Could not book this support session. Check your connection and try again.', 'error');
-        } finally {
-                submitButton.disabled = false;
-        }
-});
-
-
-/*
- * Check Firebase authentication and facilitator role
- */
-onAuthStateChanged(auth, async (user) => {
-
-        /*
-         * No authenticated user
-         */
-        if (!user) {
-                redirectToLogin();
-                return;
-        }
-
-
-        try {
-
-                /*
-                 * Get the user's profile directly from Firestore.
-                 *
-                 * We do NOT trust localStorage for the user's role.
-                 */
-                const profileSnapshot = await getDoc(
-                        doc(db, 'registrations', user.uid)
-                );
-
-
-                /*
-                 * Profile does not exist
-                 */
-                if (!profileSnapshot.exists()) {
-
-                        await signOut(auth);
-
-                        redirectToLogin();
-
+        this.assessmentAssignmentForm?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!this.selectedLearner || !this.facilitatorId) {
+                        this.setMessage('Select a learner before assigning an assessment.', 'error');
                         return;
                 }
 
+                const submitButton = document.getElementById('assignAssessmentButton');
+                const learner = this.selectedLearner;
+                submitButton.disabled = true;
+                try {
+                        await addDoc(collection(db, 'assessmentAssignments'), {
+                                userId: learner.id,
+                                facilitatorId: this.facilitatorId,
+                                assessment: document.getElementById('assessmentType').value,
+                                status: 'assigned',
+                                assignedAt: serverTimestamp()
+                        });
+                        this.assessmentAssignmentForm.reset();
+                        this.setMessage('Assessment assigned to the learner.', 'success');
+                } catch (error) {
+                        console.error('Could not assign assessment:', error);
+                        this.setMessage(error.code === 'permission-denied'
+                                ? 'Assignment was blocked by Firestore. Publish the latest firestore.rules and confirm your account is registered as a facilitator.'
+                                : 'Could not assign the assessment. Check your connection and try again.', 'error');
+                } finally {
+                        submitButton.disabled = false;
+                }
+        });
 
-                const profile = profileSnapshot.data();
+        document.getElementById('closeLearnerDetail')?.addEventListener('click', () => {
+                if (this.unsubscribeAssessmentAssignments) {
+                        this.unsubscribeAssessmentAssignments();
+                        this.unsubscribeAssessmentAssignments = null;
+                }
+                this.learnerDetail.hidden = true;
+                this.selectedLearner = null;
+        });
 
-
-                /*
-                 * User must actually be a facilitator.
-                 */
-                if (profile.role !== 'facilitator') {
-
-                        await signOut(auth);
-
-                        redirectToLogin();
-
+        this.bookingForm?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!this.selectedLearner || !this.facilitatorId) {
+                        this.setMessage('Select a learner before booking a support session.', 'error');
                         return;
                 }
 
-                facilitatorId = user.uid;
+                if (!this.bookingForm.reportValidity()) return;
 
-
-                /*
-                 * Determine the facilitator's display name.
-                 */
-                const displayName =
-                        profile.displayName ||
-                        profile.username ||
-                        user.displayName ||
-                        user.email;
-
-
-                /*
-                 * Display facilitator information.
-                 */
-                if (welcome) {
-                        welcome.textContent =
-                                `Welcome, ${displayName}.`;
+                const submitButton = document.getElementById('bookSessionButton');
+                const topic = document.getElementById('bookingTopic').value.trim();
+                const preferredDate = document.getElementById('bookingDate').value;
+                const notes = document.getElementById('bookingNotes').value.trim();
+                if (!topic || !preferredDate) {
+                        this.setMessage('Enter a topic and preferred session date.', 'error');
+                        return;
                 }
 
+                submitButton.disabled = true;
+                try {
+                        await addDoc(collection(db, 'bookings'), {
+                                userId: this.selectedLearner.id,
+                                learnerName: this.selectedLearner.displayName || this.selectedLearner.username || 'Learner',
+                                facilitatorId: this.facilitatorId,
+                                createdBy: this.facilitatorId,
+                                topic,
+                                preferredDate,
+                                notes,
+                                status: 'pending',
+                                createdAt: serverTimestamp()
+                        });
 
-                if (roleValue) {
-                        roleValue.textContent =
-                                profile.role;
+                        this.bookingForm.reset();
+                        this.setMessage(`Support session booked for ${this.selectedLearner.displayName || this.selectedLearner.username || 'the learner'}.`, 'success');
+                        await this.openLearnerDetails(this.selectedLearner);
+                } catch (error) {
+                        console.error('Could not book learner support session:', error);
+                        this.setMessage(error.code === 'permission-denied'
+                                ? 'Firebase rules blocked this booking. Confirm the latest Firestore rules are published.'
+                                : 'Could not book this support session. Check your connection and try again.', 'error');
+                } finally {
+                        submitButton.disabled = false;
                 }
+        });
 
+        onAuthStateChanged(auth, async (user) => {
 
-                /*
-                 * Store session information for UI purposes.
-                 *
-                 * This is NOT used as the security check.
-                 */
-                localStorage.setItem(
-                        'learnerHubUser',
-                        JSON.stringify({
-                                uid: user.uid,
-                                email: user.email,
-                                displayName,
-                                role: profile.role,
-                                programme: profile.programme || ''
-                        })
-                );
-
-
-                /*
-                 * Now load the learners.
-                 */
-                await loadLearners();
-
-
-                setMessage('Firebase session connected.');
-
-        } catch (error) {
-
-                console.error(
-                        'Facilitator dashboard error:',
-                        error
-                );
-
-                setMessage(
-                        error.message ||
-                        'Could not load the facilitator dashboard.',
-                        'error'
-                );
-        }
-});
-
-
-/*
- * Sign out
- */
-if (logoutButton) {
-
-        logoutButton.addEventListener('click', async () => {
+                if (!user) {
+                        this.redirectToLogin();
+                        return;
+                }
 
                 try {
 
-                        await signOut(auth);
+                        const profileSnapshot = await getDoc(
+                                doc(db, 'registrations', user.uid)
+                        );
 
-                        redirectToLogin();
+                        if (!profileSnapshot.exists()) {
+
+                                await signOut(auth);
+
+                                this.redirectToLogin();
+
+                                return;
+                        }
+
+                        const profile = profileSnapshot.data();
+
+                        if (profile.role !== 'facilitator') {
+
+                                await signOut(auth);
+
+                                this.redirectToLogin();
+
+                                return;
+                        }
+
+                        this.facilitatorId = user.uid;
+
+                        const displayName =
+                                profile.displayName ||
+                                profile.username ||
+                                user.displayName ||
+                                user.email;
+
+                        if (this.welcome) {
+                                this.welcome.textContent =
+                                        `Welcome, ${displayName}.`;
+                        }
+
+                        if (this.roleValue) {
+                                this.roleValue.textContent =
+                                        profile.role;
+                        }
+
+                        localStorage.setItem(
+                                'learnerHubUser',
+                                JSON.stringify({
+                                        uid: user.uid,
+                                        email: user.email,
+                                        displayName,
+                                        role: profile.role,
+                                        programme: profile.programme || ''
+                                })
+                        );
+
+                        await this.loadLearners();
+
+                        this.setMessage('Firebase session connected.');
 
                 } catch (error) {
 
                         console.error(
-                                'Logout error:',
+                                'Facilitator dashboard error:',
                                 error
                         );
 
-                        setMessage(
-                                'Could not sign out. Please try again.',
+                        this.setMessage(
+                                error.message ||
+                                'Could not load the facilitator dashboard.',
                                 'error'
                         );
                 }
         });
+
+        if (this.logoutButton) {
+
+                this.logoutButton.addEventListener('click', async () => {
+
+                        try {
+
+                                await signOut(auth);
+
+                                this.redirectToLogin();
+
+                        } catch (error) {
+
+                                console.error(
+                                        'Logout error:',
+                                        error
+                                );
+
+                                this.setMessage(
+                                        'Could not sign out. Please try again.',
+                                        'error'
+                                );
+                        }
+                });
+        }
+    }
 }
+
+new FacilitatorDashboard();

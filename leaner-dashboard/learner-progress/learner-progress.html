@@ -7,13 +7,8 @@
   <link rel="stylesheet" href="learner-progress.css">
 </head>
 <body>
-  <div id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <div class="brand-mark">▣</div>
-      <h1>LearnerHub</h1>
-      <p>Checking your learner account...</p>
-      <button class="primary-btn" id="signInBtn">Sign in</button>
-    </div>
+  <div id="loginScreen" class="login-screen" role="status" aria-label="Checking your learner account">
+    <span class="loading-spinner" aria-hidden="true"></span>
   </div>
 
   <div id="app" class="app-shell hidden">

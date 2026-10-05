@@ -1,131 +1,201 @@
 rules_version = '2';
 
 service cloud.firestore {
+
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------
+    // HELPER FUNCTIONS
+    // ---------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isFacilitator() {
-      return request.auth != null
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/registrations/$(request.auth.uid)
+        )
         && get(
           /databases/$(database)/documents/registrations/$(request.auth.uid)
         ).data.role == 'facilitator';
     }
 
+
+    // ---------------------------------------------------------
+    // REGISTRATIONS
+    // ---------------------------------------------------------
+
     match /registrations/{userId} {
 
       // A signed-in user can create their own profile.
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
         && request.auth.uid == userId
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email;
 
-
-      // A user can always read their own profile.
-      //
-      // A facilitator may also read learner profiles.
-      allow read: if request.auth != null
+      // A user can read their own profile.
+      // A facilitator can read learner profiles.
+      allow read: if isSignedIn()
         && (
           request.auth.uid == userId
           ||
           (
             resource.data.role == 'learner'
-            && get(
-              /databases/$(database)/documents/registrations/$(request.auth.uid)
-            ).data.role == 'facilitator'
+            && isFacilitator()
           )
         );
 
-
       // A user can update their own profile.
-      allow update: if request.auth != null
+      allow update: if isSignedIn()
         && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email;
 
-
-      // Do not allow users to delete profiles.
+      // Users cannot delete profiles.
       allow delete: if false;
     }
 
-    match /scores/{scoreId} {
-      allow read: if request.auth != null
-        && (resource.data.userId == request.auth.uid || isFacilitator());
 
-      allow create: if request.auth != null
+    // ---------------------------------------------------------
+    // SCORES
+    // ---------------------------------------------------------
+
+    match /scores/{scoreId} {
+
+      // Learners can read their own scores.
+      // Facilitators can read scores.
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isFacilitator()
+        );
+
+      // Learners can create their own scores.
+      allow create: if isSignedIn()
         && request.resource.data.userId == request.auth.uid
+
         && request.resource.data.score is number
         && request.resource.data.maxScore is number
+
         && request.resource.data.score >= 0
         && request.resource.data.maxScore > 0
         && request.resource.data.score <= request.resource.data.maxScore
+
         && request.resource.data.percentage is number
+
         && request.resource.data.stage in [
-          'html', 'rps', 'css', 'chess', 'javascript', 'skills-assessment'
+          'html',
+          'rps',
+          'css',
+          'chess',
+          'javascript',
+          'skills-assessment'
         ]
+
         && (
           request.resource.data.stage == 'skills-assessment'
-          || (
+          ||
+          (
             request.resource.data.passMark == 60
             && request.resource.data.passed is bool
-            && request.resource.data.passed == (request.resource.data.percentage >= 60)
+            && request.resource.data.passed ==
+              (request.resource.data.percentage >= 60)
           )
         )
+
         && (
           request.resource.data.stage == 'skills-assessment'
-          || request.resource.data.percentage < 60
-          || getAfter(
+          ||
+          request.resource.data.percentage < 60
+          ||
+          getAfter(
             /databases/$(database)/documents/learnerProgress/$(request.auth.uid)
           ).data.games[request.resource.data.stage] == true
         )
+
         && (
           !('assessmentAssignmentId' in request.resource.data)
-          || (
+
+          ||
+
+          (
             request.resource.data.stage == 'skills-assessment'
             && request.resource.data.assessment == true
+
             && getAfter(
               /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
             ).data.userId == request.auth.uid
+
             && getAfter(
               /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
             ).data.status == 'completed'
           )
         );
 
+      // Scores cannot be changed or deleted after creation.
       allow update, delete: if false;
     }
 
-    match /assessmentAssignments/{assignmentId} {
-      allow read: if request.auth != null
-        && (resource.data.userId == request.auth.uid || isFacilitator());
 
+    // ---------------------------------------------------------
+    // ASSESSMENT ASSIGNMENTS
+    // ---------------------------------------------------------
+
+    match /assessmentAssignments/{assignmentId} {
+
+      // A learner can read their own assignment.
+      // A facilitator can read assessment assignments.
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isFacilitator()
+        );
+
+      // Only facilitators can assign assessments.
       allow create: if isFacilitator()
         && request.resource.data.userId is string
         && request.resource.data.facilitatorId == request.auth.uid
         && request.resource.data.assessment == 'skills-assessment'
         && request.resource.data.status == 'assigned'
         && request.resource.data.assignedAt == request.time
+
         && get(
           /databases/$(database)/documents/registrations/$(request.resource.data.userId)
         ).data.role == 'learner';
 
-      allow update: if request.auth != null
+      // A learner can complete their own assigned assessment.
+      allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
         && resource.data.status == 'assigned'
         && request.resource.data.status == 'completed'
         && request.resource.data.completedAt == request.time
         && request.resource.data.scoreId is string
+
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'completedAt', 'scoreId'])
+          .hasOnly([
+            'status',
+            'completedAt',
+            'scoreId'
+          ])
+
         && getAfter(
           /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
         ).data.userId == request.auth.uid
+
         && getAfter(
           /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
         ).data.stage == 'skills-assessment'
+
         && getAfter(
           /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
         ).data.assessment == true
+
         && getAfter(
           /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
         ).data.assessmentAssignmentId == assignmentId
+
         && getAfter(
           /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
         ).data.completedAt == request.time;
@@ -133,97 +203,201 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+
+    // ---------------------------------------------------------
+    // LEARNER PROGRESS
+    // ---------------------------------------------------------
+
     match /learnerProgress/{userId} {
+
       function hasFreshScore(stage) {
-        let score = getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
-        );
+
         return request.resource.data.lastScoreId is string
-          && score.data.userId == request.auth.uid
-          && score.data.stage == stage
-          && score.data.percentage >= 60
-          && score.data.passMark == 60
-          && score.data.passed == true
-          && score.data.completedAt == request.time;
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.userId == request.auth.uid
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.stage == stage
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.percentage >= 60
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.passMark == 60
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.passed == true
+
+          && getAfter(
+            /databases/$(database)/documents/scores/$(request.resource.data.lastScoreId)
+          ).data.completedAt == request.time;
       }
 
-      allow read: if request.auth != null
-        && (request.auth.uid == userId || isFacilitator());
+      // Learner can read own progress.
+      // Facilitator can read learner progress.
+      allow read: if isSignedIn()
+        && (
+          request.auth.uid == userId
+          || isFacilitator()
+        );
 
-      allow create: if request.auth != null
+      // -------------------------------------------------------
+      // CREATE PROGRESS
+      // -------------------------------------------------------
+
+      allow create: if isSignedIn()
         && request.auth.uid == userId
         && request.resource.data.userId == request.auth.uid
+
         && request.resource.data.games is map
+
         && request.resource.data.games.html is bool
         && request.resource.data.games.rps is bool
         && request.resource.data.games.css is bool
         && request.resource.data.games.chess is bool
         && request.resource.data.games.javascript is bool
-        && (!request.resource.data.games.html || hasFreshScore('html'))
+
+        && (
+          !request.resource.data.games.html
+          || hasFreshScore('html')
+        )
+
         && !request.resource.data.games.rps
         && !request.resource.data.games.css
         && !request.resource.data.games.chess
         && !request.resource.data.games.javascript;
 
-      allow update: if request.auth != null
+      // -------------------------------------------------------
+      // UPDATE PROGRESS
+      // -------------------------------------------------------
+
+      allow update: if isSignedIn()
         && request.auth.uid == userId
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == request.auth.uid
+
         && request.resource.data.games is map
+
         && request.resource.data.games.html is bool
         && request.resource.data.games.rps is bool
         && request.resource.data.games.css is bool
         && request.resource.data.games.chess is bool
         && request.resource.data.games.javascript is bool
-        && (!request.resource.data.games.html
+
+        // HTML
+        && (
+          !request.resource.data.games.html
           || resource.data.games.html == true
-          || hasFreshScore('html'))
-        && (!request.resource.data.games.rps
+          || hasFreshScore('html')
+        )
+
+        // RPS
+        && (
+          !request.resource.data.games.rps
           || resource.data.games.rps == true
-          || hasFreshScore('rps'))
-        && (!request.resource.data.games.css
+          || hasFreshScore('rps')
+        )
+
+        // CSS
+        && (
+          !request.resource.data.games.css
           || resource.data.games.css == true
-          || hasFreshScore('css'))
-        && (!request.resource.data.games.chess
+          || hasFreshScore('css')
+        )
+
+        // Chess
+        && (
+          !request.resource.data.games.chess
           || resource.data.games.chess == true
-          || hasFreshScore('chess'))
-        && (!request.resource.data.games.javascript
+          || hasFreshScore('chess')
+        )
+
+        // JavaScript
+        && (
+          !request.resource.data.games.javascript
           || resource.data.games.javascript == true
-          || hasFreshScore('javascript'))
-        && (!request.resource.data.games.rps || resource.data.games.html == true)
-        && (!request.resource.data.games.css || resource.data.games.rps == true)
-        && (!request.resource.data.games.chess || resource.data.games.css == true)
-        && (!request.resource.data.games.javascript || resource.data.games.chess == true);
+          || hasFreshScore('javascript')
+        )
+
+        // Stage order
+        && (
+          !request.resource.data.games.rps
+          || resource.data.games.html == true
+        )
+
+        && (
+          !request.resource.data.games.css
+          || resource.data.games.rps == true
+        )
+
+        && (
+          !request.resource.data.games.chess
+          || resource.data.games.css == true
+        )
+
+        && (
+          !request.resource.data.games.javascript
+          || resource.data.games.chess == true
+        );
 
       allow delete: if false;
     }
 
-    match /bookings/{bookingId} {
-      allow read: if request.auth != null
-        && (resource.data.userId == request.auth.uid || isFacilitator());
 
+    // ---------------------------------------------------------
+    // BOOKINGS
+    // ---------------------------------------------------------
+
+    match /bookings/{bookingId} {
+
+      // Learner can read own bookings.
+      // Facilitator can read bookings.
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isFacilitator()
+        );
+
+      // Only facilitators can create bookings.
       allow create: if isFacilitator()
         && request.resource.data.userId is string
         && request.resource.data.facilitatorId == request.auth.uid
         && request.resource.data.createdBy == request.auth.uid
+
         && get(
           /databases/$(database)/documents/registrations/$(request.resource.data.userId)
         ).data.role == 'learner'
+
         && request.resource.data.topic is string
         && request.resource.data.preferredDate is string
         && request.resource.data.notes is string
         && request.resource.data.status == 'pending';
 
-      allow update: if request.auth != null
+      // Learner/facilitator can mark booking as completed
+      // according to ownership rules.
+      allow update: if isSignedIn()
         && resource.data.status in ['pending', 'confirmed']
         && request.resource.data.status == 'completed'
         && request.resource.data.completedBy == request.auth.uid
         && request.resource.data.completedAt == request.time
+
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'completedAt', 'completedBy'])
+          .hasOnly([
+            'status',
+            'completedAt',
+            'completedBy'
+          ])
+
         && (
           resource.data.userId == request.auth.uid
-          || (
+          ||
+          (
             resource.data.facilitatorId == request.auth.uid
             && isFacilitator()
           )

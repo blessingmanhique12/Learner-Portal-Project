@@ -836,90 +836,6 @@ function subscribeToAssignedAssessments(userId) {
   });
 }
 
-<<<<<<< Updated upstream
-=======
-function subscribeToAssignedAssessments(userId) {
-  if (unsubscribeAssignments) unsubscribeAssignments();
-
-  const assignmentsQuery = query(
-    collection(db, "assessmentAssignments"),
-    where("userId", "==", userId)
-  );
-
-  unsubscribeAssignments = onSnapshot(assignmentsQuery, (snapshot) => {
-    const list = document.getElementById("assignedAssessmentsList");
-    const assignments = snapshot.docs
-      .map((assignmentDocument) => ({
-        id: assignmentDocument.id,
-        ...assignmentDocument.data()
-      }))
-      .sort((first, second) => {
-        const firstTime = first.assignedAt?.toMillis?.() || 0;
-        const secondTime = second.assignedAt?.toMillis?.() || 0;
-        return secondTime - firstTime;
-      });
-
-    list.replaceChildren();
-    if (assignments.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "muted";
-      empty.textContent = "You do not have any facilitator-assigned assessments yet.";
-      list.appendChild(empty);
-      return;
-    }
-
-    assignments.forEach((assignment) => {
-      const item = document.createElement("div");
-      item.className = "assigned-assessment-item";
-      const heading = document.createElement("div");
-      heading.className = "booking-item-heading";
-      const title = document.createElement("strong");
-      title.textContent = "Software Development Skills Assessment";
-      const status = document.createElement("span");
-      status.className = `booking-status ${assignment.status === "completed" ? "completed" : "pending"}`;
-      status.textContent = assignment.status === "completed" ? "Completed" : "Assigned";
-      heading.append(title, status);
-      item.appendChild(heading);
-
-      if (assignment.status === "completed") {
-        const completed = document.createElement("p");
-        const completedAt = assignment.completedAt?.toDate?.();
-        completed.textContent = completedAt
-          ? `Completed on ${completedAt.toLocaleDateString()}`
-          : "Assessment completed";
-        item.appendChild(completed);
-      } else {
-        const startButton = document.createElement("button");
-        startButton.type = "button";
-        startButton.className = "primary-btn small";
-        startButton.textContent = "Start assessment";
-        startButton.addEventListener("click", () => {
-          startQuiz("javascript", {
-            assessment: true,
-            assessmentAssignmentId: assignment.id
-          });
-        });
-        item.appendChild(startButton);
-      }
-
-      list.appendChild(item);
-    });
-  }, (error) => {
-    console.error("Could not load facilitator-assigned assessments:", error);
-    const list = document.getElementById("assignedAssessmentsList");
-    if (list) {
-      list.textContent = "Assigned assessments could not be loaded. Please try again later.";
-    }
-  });
-}
-
-
-/* =========================
-   RENDER TASKS
-   [CHANGED] uses getVisibleData() and the .empty-state style
-========================= */
-
->>>>>>> Stashed changes
 function renderTasks() {
   const list = document.getElementById("tasksList");
   const tasks = getVisibleData().tasks; // [NEW]
@@ -1895,22 +1811,6 @@ document
 
 
 /* =========================
-   SIGN IN
-========================= */
-
-document
-  .getElementById("signInBtn")
-  .addEventListener(
-    "click",
-    function () {
-
-      window.location.href = "../../login-page/login.html";
-
-    }
-  );
-
-
-/* =========================
    START APPLICATION
 ========================= */
 
@@ -1953,16 +1853,9 @@ onAuthStateChanged(auth, async (user) => {
     showLearnerProfile(user, profile);
     loadState();
     progressRepository = new LearnerProgressRepository(db, user.uid);
-    let remoteProgress = null;
-    try {
-      remoteProgress = await progressRepository.load();
-    } catch (error) {
-      console.error("Could not load learner progress from Firebase:", error);
-    }
-    state.games = remoteProgress
-      ? { ...createInitialState().games, ...(remoteProgress.games || {}) }
-      : createInitialState().games;
-    state.assessment = remoteProgress?.latestAssessment || null;
+
+    state.games = createInitialState().games;
+    state.assessment = null;
     syncProgressManager(state.games);
     state.bookings = [];
     renderGoals();
@@ -1974,6 +1867,20 @@ onAuthStateChanged(auth, async (user) => {
     renderAssessmentProgress();
     loginScreen.classList.add("hidden");
     app.classList.remove("hidden");
+
+    let remoteProgress = null;
+    try {
+      remoteProgress = await progressRepository.load();
+    } catch (error) {
+      console.error("Could not load learner progress from Firebase:", error);
+    }
+    state.games = remoteProgress
+      ? { ...createInitialState().games, ...(remoteProgress.games || {}) }
+      : createInitialState().games;
+    state.assessment = remoteProgress?.latestAssessment || null;
+    syncProgressManager(state.games);
+    renderStageButtons();
+    renderAssessmentProgress();
   } catch (error) {
     console.error("Could not load learner profile:", error);
     await signOut(auth);
