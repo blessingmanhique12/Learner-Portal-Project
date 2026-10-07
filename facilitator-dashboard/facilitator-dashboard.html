@@ -1,39 +1,685 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Facilitator Dashboard | LearnerHub</title>
-	<link rel="stylesheet" href="facilitator-dashboard.css">
-	<script type="module" src="facilitator-dashboard.js" defer></script>
-</head>
-<body>
-	<main class="dashboard-shell">
-		<header class="dashboard-header">
-			<div>
-				<p class="eyebrow">LearnerHub</p>
-				<h1>Facilitator dashboard</h1>
-				<p id="facilitatorWelcome" class="muted">Checking your Firebase session...</p>
-			</div>
-			<button id="logoutButton" type="button">Sign out</button>
-		</header>
+<!DOCTYPE html> 
 
-		<section class="dashboard-grid" aria-label="Facilitator tools">
-			<article>
-				<h2>Learner support</h2>
-				<p>Review learner requests, support bookings, and progress updates.</p>
-			</article>
-			<article>
-				<h2>Assessments</h2>
-				<p>Monitor outstanding work and identify learners who need follow-up.</p>
-			</article>
-			<article>
-				<h2>Profile role</h2>
-				<p id="roleValue">Loading...</p>
-			</article>
-		</section>
+<html lang="en"> 
 
-		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
-	</main>
-</body>
-</html>
+
+<head> 
+
+    <meta charset="UTF-8"> 
+
+    <meta 
+        name="viewport" 
+
+        content="width=device-width, initial-scale=1.0"> 
+
+    <title>Facilitator Dashboard | LearnerHub</title> 
+
+ 
+    <link 
+        rel="stylesheet" 
+
+        href="facilitator-dashboard.css"> 
+
+</head> 
+
+ 
+<body> 
+
+    <!-- ======================= 
+
+         SIDEBAR 
+
+    ========================== --> 
+
+    <aside class="sidebar"> 
+
+        <div class="logo"> 
+            📖 
+            <strong>LearnerHub</strong> 
+
+        </div> 
+
+        <nav> 
+
+            <a href="#" class="active"> 
+                🏠 Dashboard 
+            </a> 
+
+
+            <a href="#"> 
+                📝 Tasks 
+            </a> 
+
+
+            <a href="#"> 
+                📚 Resources
+            </a> 
+
+
+            <a href="#"> 
+                👥 Learners 
+            </a> 
+
+
+            <a href="#"> 
+                📅 Support Sessions 
+            </a> 
+
+
+            <a href="#"> 
+                💬 Messages 
+            </a> 
+
+            <a href="#"> 
+                ⚙️ Settings 
+            </a> 
+
+        </nav> 
+
+
+        <a href="#" id="logoutButton" class="logout"> 
+            ↪ Log out 
+        </a> 
+
+    </aside> 
+
+    <!-- ======================= 
+
+         MAIN AREA 
+
+    ========================== --> 
+
+    <div class="main"> 
+
+        <!-- TOP BAR --> 
+
+        <header class="topbar"> 
+
+            <div class="page-title"> 
+
+                <span class="menu-icon"> 
+                    ☰ 
+                </span> 
+
+
+                <h2> 
+                    Dashboard 
+                </h2> 
+
+            </div> 
+
+ 
+            <div class="profile"> 
+
+                <span class="notification"> 
+                    🔔 
+                </span> 
+
+
+                <div class="profile-circle"> 
+                    F 
+                </div> 
+
+
+                <div class="profile-info"> 
+
+                    <strong id="facilitatorName"> 
+                        Facilitator 
+                    </strong> 
+
+ 
+                    <small> 
+                        Facilitator 
+                    </small> 
+
+                </div> 
+
+            </div> 
+
+
+        </header> 
+
+        <!-- ========================= 
+
+             DASHBOARD CONTENT 
+
+        ========================== --> 
+
+        <main class="dashboard"> 
+
+            <!-- WELCOME --> 
+
+            <section class="welcome"> 
+
+                <div> 
+
+                    <h1> 
+
+                        Welcome back, 
+
+                        <span id="welcomeName"> 
+
+                            Facilitator 
+
+                        </span>! 
+
+                    </h1> 
+
+ 
+                    <p> 
+                        Here's an overview of your learners 
+
+                        and activities. 
+                    </p> 
+
+                </div> 
+
+
+                <button class="date-button"> 
+                    📅 This Week 
+                </button> 
+
+            </section> 
+
+            <!-- ========================= 
+
+                 STATISTICS 
+
+            ========================== --> 
+
+            <section class="stats"> 
+
+                <div class="stat-card"> 
+
+                    <div class="stat-icon blue"> 
+                        👥 
+                    </div> 
+
+
+                    <h3> 
+                        Total Learners 
+                    </h3> 
+
+
+                    <strong id="totalLearners"> 
+                        0 
+                    </strong> 
+
+
+                    <p> 
+                        Registered learners 
+                    </p> 
+
+                </div> 
+
+ 
+                <div class="stat-card"> 
+
+                    <div class="stat-icon green"> 
+                        ✓ 
+                    </div> 
+
+
+                    <h3> 
+                        Completed Tasks 
+                    </h3> 
+
+                    <strong id="completedTasks"> 
+                        0 
+                    </strong> 
+
+
+                    <p> 
+                        Tasks completed 
+                    </p> 
+
+                </div> 
+
+
+                <div class="stat-card"> 
+
+                    <div class="stat-icon yellow"> 
+                        ◷ 
+                    </div> 
+
+
+                    <h3> 
+                        Outstanding Tasks 
+                    </h3> 
+
+ 
+                    <strong id="outstandingTasks"> 
+                        0
+                    </strong> 
+
+ 
+                    <p> 
+                        Tasks remaining 
+                    </p> 
+
+                </div> 
+
+ 
+                <div class="stat-card"> 
+
+                    <div class="stat-icon purple"> 
+                        📋 
+                    </div> 
+
+ 
+                    <h3> 
+                        Total Tasks 
+                    </h3> 
+
+
+                    <strong id="totalTasks"> 
+                        0 
+                    </strong> 
+
+
+                    <p> 
+                        Tasks created 
+                    </p> 
+
+                </div> 
+
+ 
+                <div class="stat-card"> 
+
+                    <div class="stat-icon pink"> 
+                        📅 
+                    </div> 
+
+
+                    <h3> 
+                        Support Sessions 
+                    </h3> 
+
+ 
+                    <strong id="supportSessions"> 
+                        0 
+                    </strong> 
+
+                    <p> 
+                        Upcoming sessions 
+                    </p> 
+
+                </div> 
+
+            </section> 
+
+
+            <!-- ========================= 
+
+                 MIDDLE SECTION 
+
+            ========================== --> 
+
+            <section class="middle"> 
+
+ 
+                <!-- LEARNER PROGRESS --> 
+
+                <div class="card"> 
+
+                    <div class="card-header"> 
+
+                        <h2> 
+                            Learner Progress Overview 
+                        </h2> 
+
+
+                        <button> 
+                            All Learners ▼ 
+                        </button> 
+
+
+                    </div> 
+
+ 
+                    <div class="progress-content"> 
+
+ 
+                        <div class="circle-progress"> 
+
+                            <strong>
+                                0% 
+                            </strong> 
+
+
+                            <small> 
+                                Average Progress 
+                            </small> 
+
+                        </div> 
+ 
+
+                        <div class="progress-list"> 
+
+                            <p> 
+                                🟢 On Track 
+
+                                <span> 
+                                    0 learners 
+                                </span> 
+
+                            </p> 
+
+
+                            <p> 
+                                🟡 At Risk 
+                                <span> 
+                                    0 learners 
+                                </span> 
+                            </p> 
+
+
+                            <p> 
+                                🔴 Needs Attention 
+                                <span> 
+                                    0 learners 
+                                </span> 
+                            </p>
+
+                        </div> 
+
+                    </div> 
+
+ 
+                    <a href="#"> 
+                        View learner progress → 
+                    </a> 
+
+                </div> 
+
+                <!-- TASK OVERVIEW --> 
+
+                <div class="card"> 
+
+                    <div class="card-header"> 
+
+                        <h2> 
+                            Task Overview 
+                        </h2> 
+
+ 
+                        <a href="#"> 
+                            View all 
+                        </a> 
+
+                    </div> 
+
+
+
+                    <div class="due-item yellow-box"> 
+
+                        <span> 
+                            ◷ 
+                        </span> 
+
+
+                        <div> 
+
+                            <p> 
+                                Due Soon 
+                            </p> 
+
+
+                            <strong> 
+                                0 
+                            </strong> 
+
+                        </div> 
+
+                        <span> 
+                            › 
+                        </span> 
+
+                    </div> 
+
+ 
+
+                    <div class="due-item red-box"> 
+
+                        <span> 
+                            ! 
+                        </span> 
+
+                        <div> 
+
+                            <p> 
+                                Overdue 
+                            </p> 
+
+
+                            <strong> 
+                                0 
+                            </strong> 
+
+                        </div> 
+
+                        <span> 
+                            ›
+                        </span> 
+
+                    </div> 
+
+ 
+                    <div class="due-item grey-box"> 
+
+ 
+                        <span> 
+                            ✓ 
+                        </span> 
+
+
+                        <div> 
+
+                            <p> 
+                                Completed 
+                            </p> 
+
+
+                            <strong id="taskOverviewCompleted"> 
+                                0 
+                            </strong> 
+
+                        </div> 
+
+                        <span> 
+                            › 
+                        </span> 
+
+                    </div> 
+
+                </div> 
+
+            </section> 
+
+ 
+            <!-- ========================= 
+
+                 RECENT TASKS 
+
+            ========================== --> 
+
+            <section class="card"> 
+
+                <div class="card-header"> 
+
+                    <h2>
+                        Recent Tasks 
+                    </h2> 
+
+                    <a href="#"> 
+                        View all 
+                    </a> 
+
+                </div> 
+
+                <div id="taskList"> 
+
+                    <div class="empty-message"> 
+                        Loading tasks... 
+                    </div> 
+
+                </div> 
+
+            </section> 
+
+ 
+            <!-- ========================= 
+
+                 LEARNERS + RESOURCES 
+
+            ========================== --> 
+
+            <section class="bottom-grid"> 
+
+                <!-- LEARNERS --> 
+
+                <div class="card"> 
+
+                    <div class="card-header"> 
+
+                        <h2> 
+                            Learners 
+                        </h2> 
+
+                        <a href="#"> 
+                            View all 
+                        </a> 
+
+                    </div> 
+
+ 
+                    <div class="table-container"> 
+
+                        <table> 
+
+                            <thead> 
+
+                                <tr> 
+
+                                    <th> 
+                                        Learner 
+                                    </th> 
+
+                                    <th> 
+                                     Email 
+                                    </th> 
+
+                                    <th> 
+                                        Action 
+                                    </th> 
+                                </tr> 
+                            </thead> 
+
+
+                            <tbody id="learnerList"> 
+
+                                <tr> 
+                                    <td colspan="3"> 
+                                        Loading learners... 
+                                    </td> 
+
+                                </tr> 
+                            </tbody> 
+
+                        </table> 
+                    </div> 
+                </div> 
+
+
+                <!-- RESOURCES --> 
+
+                <div class="card"> 
+
+ 
+                    <div class="card-header"> 
+                        <h2> 
+                            Recent Resources 
+                        </h2> 
+
+                        <a href="#"> 
+                            View all 
+                        </a> 
+                    </div> 
+
+
+                    <div id="resourceList"> 
+                        <div class="empty-message"> 
+                            Loading resources... 
+                        </div> 
+                    </div> 
+
+                </div> 
+
+            </section> 
+
+ 
+
+            <section class="card"> 
+
+                <h2> 
+                    Quick Actions 
+                </h2> 
+
+                <div class="quick-actions"> 
+
+                    <button id="addTaskButton"> 
+                        <span> 
+                            ＋ 
+                        </span> 
+
+                        <small> 
+                            Add Task 
+                        </small> 
+                    </button> 
+
+
+                    <button id="addResourceButton"> 
+                        <span> 
+                            📚 
+                        </span> 
+
+                        <small> 
+                            Add Resource 
+                        </small> 
+                    </button> 
+
+                    <button id="bookSessionButton"> 
+                        <span> 
+                            📅 
+                        </span> 
+
+                        <small> 
+                            Book Session 
+                        </small> 
+                    </button> 
+
+ 
+                    <button id="messageLearnersButton"> 
+                        <span> 
+                            💬 
+                        </span> 
+
+                        <small> 
+                            Message Learners 
+                        </small> 
+                    </button> 
+
+                </div> 
+
+            </section> 
+
+        </main> 
+
+    </div> 
+
+    <script 
+        type="module"
+        src="facilitator-dashboard.js"> 
+    </script> 
+</body> 
+</html> 

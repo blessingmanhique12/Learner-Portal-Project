@@ -240,9 +240,45 @@ const gameSessionInit = () => {
 			loadQuestion();
 		}, 700);
 	});
-<<<<<<< HEAD
-}
 
+	document.getElementById('restartStageBtn')?.addEventListener('click', () => {
+		currentQuestion = 0;
+		selectedAnswer = null;
+		if (sessionStatus) sessionStatus.textContent = 'In progress';
+		loadQuestion();
+	});
+
+	document.getElementById('restartAllBtn')?.addEventListener('click', () => {
+		currentStage = 0;
+		currentQuestion = 0;
+		score = 0;
+		selectedAnswer = null;
+		if (sessionStatus) sessionStatus.textContent = 'In progress';
+		loadQuestion();
+	});
+
+	document.querySelectorAll('.stage-btn').forEach((button, index) => {
+		button.addEventListener('click', () => {
+			currentStage = index;
+			currentQuestion = 0;
+			selectedAnswer = null;
+			if (sessionStatus) sessionStatus.textContent = 'In progress';
+			loadQuestion();
+		});
+	});
+
+	document.getElementById('signOutBtn')?.addEventListener('click', () => {
+		alert('You have signed out.');
+	});
+
+	document.getElementById('supportBtn')?.addEventListener('click', () => {
+		alert('Support booking section coming soon.');
+	});
+
+	loadQuestion();
+};
+
+gameSessionInit();
 
 // CHECKLIST //
 // Task class
@@ -547,44 +583,3 @@ function cancelSession(index) {
     displaySessions();
 
 }
-=======
-
-	document.getElementById('restartStageBtn')?.addEventListener('click', () => {
-		currentQuestion = 0;
-		selectedAnswer = null;
-		if (sessionStatus) sessionStatus.textContent = 'In progress';
-		loadQuestion();
-	});
-
-	document.getElementById('restartAllBtn')?.addEventListener('click', () => {
-		currentStage = 0;
-		currentQuestion = 0;
-		score = 0;
-		selectedAnswer = null;
-		if (sessionStatus) sessionStatus.textContent = 'In progress';
-		loadQuestion();
-	});
-
-	document.querySelectorAll('.stage-btn').forEach((button, index) => {
-		button.addEventListener('click', () => {
-			currentStage = index;
-			currentQuestion = 0;
-			selectedAnswer = null;
-			if (sessionStatus) sessionStatus.textContent = 'In progress';
-			loadQuestion();
-		});
-	});
-
-	document.getElementById('signOutBtn')?.addEventListener('click', () => {
-		alert('You have signed out.');
-	});
-
-	document.getElementById('supportBtn')?.addEventListener('click', () => {
-		alert('Support booking section coming soon.');
-	});
-
-	loadQuestion();
-};
-
-gameSessionInit();
->>>>>>> c2f8658cb21f4e35faaa45a0710f9cb86f486da0
