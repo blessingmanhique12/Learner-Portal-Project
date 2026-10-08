@@ -23,7 +23,7 @@
 				<h1>Facilitator dashboard</h1>
 
 				<p id="facilitatorWelcome" class="muted">
-					Checking your Firebase session...
+					Facilitator dashboard
 				</p>
 			</div>
 
@@ -38,21 +38,21 @@
 
 			<article>
 				<h2>Registered learners</h2>
-				<p class="metric" id="learnerTotal">0</p>
-				<p class="muted">Learners in your programme list</p>
+				<p class="metric" id="learnerTotal">—</p>
+				<p class="muted">Learner data is not loaded on this static dashboard</p>
 			</article>
 
 
 			<article>
 				<h2>Needs support</h2>
-				<p class="metric" id="supportNeededTotal">0</p>
-				<p class="muted">Unresolved failure or inactivity for 7+ days</p>
+				<p class="metric" id="supportNeededTotal">—</p>
+				<p class="muted">Support data is not loaded on this static dashboard</p>
 			</article>
 
 
 			<article>
 				<h2>Facilitator role</h2>
-				<p class="metric" id="roleValue">Loading...</p>
+				<p class="metric" id="roleValue">Facilitator</p>
 			</article>
 
 		</section>
@@ -76,15 +76,14 @@
 				</div>
 
 				<span id="learnerCount" class="learner-count">
-					0 learners
+					Data unavailable
 				</span>
 			</div>
 
 
-			<!-- Learners will be inserted here by JavaScript -->
 			<div id="learnerList" class="learner-list" aria-live="polite">
 				<p class="muted">
-					Loading learners...
+					Learner data is not loaded on this static dashboard.
 				</p>
 			</div>
 
@@ -110,7 +109,7 @@
 							<small id="selectedStageCount">0 / 5 stages complete</small>
 						</div>
 						<div><span>Latest assessment</span><strong id="selectedAssessmentScore">No attempt</strong></div>
-						<div><span>Support status</span><strong id="selectedSupportStatus">Loading...</strong></div>
+						<div><span>Support status</span><strong id="selectedSupportStatus">Unavailable</strong></div>
 					</div>
 
 					<div class="learner-view-filter">
@@ -185,7 +184,7 @@
 		</section>
 
 
-		<!-- Firebase status / errors -->
+		<!-- Logout status -->
 		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
 
 	</main>

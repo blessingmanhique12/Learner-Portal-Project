@@ -12,17 +12,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isFacilitator() {
-      return isSignedIn()
-        && exists(
-          /databases/$(database)/documents/registrations/$(request.auth.uid)
-        )
-        && get(
-          /databases/$(database)/documents/registrations/$(request.auth.uid)
-        ).data.role == 'facilitator';
-    }
-
-
     // ---------------------------------------------------------
     // REGISTRATIONS
     // ---------------------------------------------------------
@@ -35,17 +24,8 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email;
 
-      // A user can read their own profile.
-      // A facilitator can read learner profiles.
       allow read: if isSignedIn()
-        && (
-          request.auth.uid == userId
-          ||
-          (
-            resource.data.role == 'learner'
-            && isFacilitator()
-          )
-        );
+        && request.auth.uid == userId;
 
       // A user can update their own profile.
       allow update: if isSignedIn()
@@ -64,13 +44,8 @@ service cloud.firestore {
 
     match /scores/{scoreId} {
 
-      // Learners can read their own scores.
-      // Facilitators can read scores.
       allow read: if isSignedIn()
-        && (
-          resource.data.userId == request.auth.uid
-          || isFacilitator()
-        );
+        && resource.data.userId == request.auth.uid;
 
       // Learners can create their own scores.
       allow create: if isSignedIn()
@@ -113,94 +88,10 @@ service cloud.firestore {
           getAfter(
             /databases/$(database)/documents/learnerProgress/$(request.auth.uid)
           ).data.games[request.resource.data.stage] == true
-        )
-
-        && (
-          !('assessmentAssignmentId' in request.resource.data)
-
-          ||
-
-          (
-            request.resource.data.stage == 'skills-assessment'
-            && request.resource.data.assessment == true
-
-            && getAfter(
-              /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
-            ).data.userId == request.auth.uid
-
-            && getAfter(
-              /databases/$(database)/documents/assessmentAssignments/$(request.resource.data.assessmentAssignmentId)
-            ).data.status == 'completed'
-          )
         );
 
       // Scores cannot be changed or deleted after creation.
       allow update, delete: if false;
-    }
-
-
-    // ---------------------------------------------------------
-    // ASSESSMENT ASSIGNMENTS
-    // ---------------------------------------------------------
-
-    match /assessmentAssignments/{assignmentId} {
-
-      // A learner can read their own assignment.
-      // A facilitator can read assessment assignments.
-      allow read: if isSignedIn()
-        && (
-          resource.data.userId == request.auth.uid
-          || isFacilitator()
-        );
-
-      // Only facilitators can assign assessments.
-      allow create: if isFacilitator()
-        && request.resource.data.userId is string
-        && request.resource.data.facilitatorId == request.auth.uid
-        && request.resource.data.assessment == 'skills-assessment'
-        && request.resource.data.status == 'assigned'
-        && request.resource.data.assignedAt == request.time
-
-        && get(
-          /databases/$(database)/documents/registrations/$(request.resource.data.userId)
-        ).data.role == 'learner';
-
-      // A learner can complete their own assigned assessment.
-      allow update: if isSignedIn()
-        && resource.data.userId == request.auth.uid
-        && resource.data.status == 'assigned'
-        && request.resource.data.status == 'completed'
-        && request.resource.data.completedAt == request.time
-        && request.resource.data.scoreId is string
-
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly([
-            'status',
-            'completedAt',
-            'scoreId'
-          ])
-
-        && getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
-        ).data.userId == request.auth.uid
-
-        && getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
-        ).data.stage == 'skills-assessment'
-
-        && getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
-        ).data.assessment == true
-
-        && getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
-        ).data.assessmentAssignmentId == assignmentId
-
-        && getAfter(
-          /databases/$(database)/documents/scores/$(request.resource.data.scoreId)
-        ).data.completedAt == request.time;
-
-      allow delete: if false;
     }
 
 
@@ -239,13 +130,8 @@ service cloud.firestore {
           ).data.completedAt == request.time;
       }
 
-      // Learner can read own progress.
-      // Facilitator can read learner progress.
       allow read: if isSignedIn()
-        && (
-          request.auth.uid == userId
-          || isFacilitator()
-        );
+        && request.auth.uid == userId;
 
       // -------------------------------------------------------
       // CREATE PROGRESS
@@ -344,63 +230,6 @@ service cloud.firestore {
         && (
           !request.resource.data.games.javascript
           || resource.data.games.chess == true
-        );
-
-      allow delete: if false;
-    }
-
-
-    // ---------------------------------------------------------
-    // BOOKINGS
-    // ---------------------------------------------------------
-
-    match /bookings/{bookingId} {
-
-      // Learner can read own bookings.
-      // Facilitator can read bookings.
-      allow read: if isSignedIn()
-        && (
-          resource.data.userId == request.auth.uid
-          || isFacilitator()
-        );
-
-      // Only facilitators can create bookings.
-      allow create: if isFacilitator()
-        && request.resource.data.userId is string
-        && request.resource.data.facilitatorId == request.auth.uid
-        && request.resource.data.createdBy == request.auth.uid
-
-        && get(
-          /databases/$(database)/documents/registrations/$(request.resource.data.userId)
-        ).data.role == 'learner'
-
-        && request.resource.data.topic is string
-        && request.resource.data.preferredDate is string
-        && request.resource.data.notes is string
-        && request.resource.data.status == 'pending';
-
-      // Learner/facilitator can mark booking as completed
-      // according to ownership rules.
-      allow update: if isSignedIn()
-        && resource.data.status in ['pending', 'confirmed']
-        && request.resource.data.status == 'completed'
-        && request.resource.data.completedBy == request.auth.uid
-        && request.resource.data.completedAt == request.time
-
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly([
-            'status',
-            'completedAt',
-            'completedBy'
-          ])
-
-        && (
-          resource.data.userId == request.auth.uid
-          ||
-          (
-            resource.data.facilitatorId == request.auth.uid
-            && isFacilitator()
-          )
         );
 
       allow delete: if false;
