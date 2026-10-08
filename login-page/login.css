@@ -1,6 +1,21 @@
 /* Shares the exact brand colors, photo background, logo motion, and form controls with register.css. */
 @import url('register.css');
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 /* Keeps the login page aligned with the register page width and positioning. */
 .login-page {
 	display: grid;

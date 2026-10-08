@@ -1,2 +1,17 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 .stage1-html .quiz-question { border-left: 4px solid #e56b4f; }
 .stage1-html .next-question { background: #fff0eb; border-color: #e56b4f; }

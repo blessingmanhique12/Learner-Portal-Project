@@ -1713,86 +1713,78 @@ document
    NAVIGATION
 ========================= */
 
-document
-  .querySelectorAll(".nav-link")
-  .forEach(
-    function (link) {
+class NavigationController {
+  constructor(navButtons) {
+    this.navButtons = [...navButtons];
 
-      link.addEventListener(
-        "click",
-        function () {
+    this.sections = {
+      home: [
+        document.querySelector(".hero"),
+        document.getElementById("progressCard"),
+        document.querySelector(".stats-grid")
+      ],
+      goals: [document.getElementById("goalsSection")],
+      tasks: [document.getElementById("tasksSection")],
+      support: [document.getElementById("supportSection")],
+      progress: [
+        document.getElementById("progressSection"),
+        document.querySelector(".assigned-assessments-card")
+      ]
+    };
 
-          document
-            .querySelectorAll(
-              ".nav-link"
-            )
-            .forEach(
-              function (item) {
+    this.allSections = [
+      document.querySelector(".hero"),
+      document.getElementById("progressCard"),
+      document.querySelector(".stats-grid"),
+      document.getElementById("goalsSection"),
+      document.getElementById("supportSection"),
+      document.getElementById("tasksSection"),
+      document.getElementById("progressSection"),
+      document.querySelector(".assessment-card"),
+      document.querySelector(".assigned-assessments-card")
+    ].filter(Boolean);
+    this.bindEvents();
+    this.setCurrent("home");
+  }
 
-                item.classList.remove(
-                  "active"
-                );
+  bindEvents() {
+    this.navButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        this.setCurrent(button.dataset.section || "home");
+      });
+    });
+  }
 
-              }
-            );
+  setCurrent(section) {
+    const selectedSection = this.sections[section] ? section : "home";
+    const contentGrid = document.querySelector(".content-grid");
 
+    this.navButtons.forEach((button) => {
+      const isActive = button.dataset.section === selectedSection;
+      button.classList.toggle("active", isActive);
+    });
 
-          link.classList.add(
-            "active"
-          );
+    this.allSections.forEach((element) => {
+      element.classList.add("hidden");
+    });
 
-
-          const section =
-            link.dataset.section;
-
-
-          // [NEW] Home scrolls to the very top (so the welcome section is visible)
-          if (section === "home") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-          }
-
-
-          const targets = {
-
-            home:
-              "progressCard",
-
-            goals:
-              "goalsSection",
-
-            tasks:
-              "tasksSection",
-
-            support:
-              "supportSection",
-
-            progress:
-              "progressSection"
-
-          };
-
-
-          const target =
-            document.getElementById(
-              targets[section]
-            );
-
-
-          if (target) {
-
-            target.scrollIntoView({
-              behavior: "smooth",
-              block: "start"
-            });
-
-          }
-
-        }
-      );
-
+    if (contentGrid) {
+      contentGrid.classList.toggle("section-view-single", selectedSection !== "home");
     }
-  );
+
+    if (selectedSection === "home") {
+      this.sections.home.forEach((element) => element.classList.remove("hidden"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    this.sections[selectedSection].forEach((element) => {
+      element.classList.remove("hidden");
+    });
+  }
+}
+
+new NavigationController(document.querySelectorAll(".nav-link"));
 
 
 /* =========================
