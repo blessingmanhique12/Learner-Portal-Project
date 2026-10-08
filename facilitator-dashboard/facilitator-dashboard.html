@@ -1,685 +1,192 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
+<html lang="en">
 
-<html lang="en"> 
-
-
-<head> 
-
-    <meta charset="UTF-8"> 
-
-    <meta 
-        name="viewport" 
-
-        content="width=device-width, initial-scale=1.0"> 
-
-    <title>Facilitator Dashboard | LearnerHub</title> 
-
- 
-    <link 
-        rel="stylesheet" 
-
-        href="facilitator-dashboard.css"> 
-
-</head> 
-
- 
-<body> 
-
-    <!-- ======================= 
-
-         SIDEBAR 
-
-    ========================== --> 
-
-    <aside class="sidebar"> 
-
-        <div class="logo"> 
-            📖 
-            <strong>LearnerHub</strong> 
-
-        </div> 
-
-        <nav> 
-
-            <a href="#" class="active"> 
-                🏠 Dashboard 
-            </a> 
-
-
-            <a href="#"> 
-                📝 Tasks 
-            </a> 
-
-
-            <a href="#"> 
-                📚 Resources
-            </a> 
-
-
-            <a href="#"> 
-                👥 Learners 
-            </a> 
-
-
-            <a href="#"> 
-                📅 Support Sessions 
-            </a> 
-
-
-            <a href="#"> 
-                💬 Messages 
-            </a> 
-
-            <a href="#"> 
-                ⚙️ Settings 
-            </a> 
-
-        </nav> 
-
-
-        <a href="#" id="logoutButton" class="logout"> 
-            ↪ Log out 
-        </a> 
-
-    </aside> 
-
-    <!-- ======================= 
-
-         MAIN AREA 
-
-    ========================== --> 
-
-    <div class="main"> 
-
-        <!-- TOP BAR --> 
-
-        <header class="topbar"> 
-
-            <div class="page-title"> 
-
-                <span class="menu-icon"> 
-                    ☰ 
-                </span> 
-
-
-                <h2> 
-                    Dashboard 
-                </h2> 
-
-            </div> 
-
- 
-            <div class="profile"> 
-
-                <span class="notification"> 
-                    🔔 
-                </span> 
-
-
-                <div class="profile-circle"> 
-                    F 
-                </div> 
-
-
-                <div class="profile-info"> 
-
-                    <strong id="facilitatorName"> 
-                        Facilitator 
-                    </strong> 
-
- 
-                    <small> 
-                        Facilitator 
-                    </small> 
-
-                </div> 
-
-            </div> 
-
-
-        </header> 
-
-        <!-- ========================= 
-
-             DASHBOARD CONTENT 
-
-        ========================== --> 
-
-        <main class="dashboard"> 
-
-            <!-- WELCOME --> 
-
-            <section class="welcome"> 
-
-                <div> 
-
-                    <h1> 
-
-                        Welcome back, 
-
-                        <span id="welcomeName"> 
-
-                            Facilitator 
-
-                        </span>! 
-
-                    </h1> 
-
- 
-                    <p> 
-                        Here's an overview of your learners 
-
-                        and activities. 
-                    </p> 
-
-                </div> 
-
-
-                <button class="date-button"> 
-                    📅 This Week 
-                </button> 
-
-            </section> 
-
-            <!-- ========================= 
-
-                 STATISTICS 
-
-            ========================== --> 
-
-            <section class="stats"> 
-
-                <div class="stat-card"> 
-
-                    <div class="stat-icon blue"> 
-                        👥 
-                    </div> 
-
-
-                    <h3> 
-                        Total Learners 
-                    </h3> 
-
-
-                    <strong id="totalLearners"> 
-                        0 
-                    </strong> 
-
-
-                    <p> 
-                        Registered learners 
-                    </p> 
-
-                </div> 
-
- 
-                <div class="stat-card"> 
-
-                    <div class="stat-icon green"> 
-                        ✓ 
-                    </div> 
-
-
-                    <h3> 
-                        Completed Tasks 
-                    </h3> 
-
-                    <strong id="completedTasks"> 
-                        0 
-                    </strong> 
-
-
-                    <p> 
-                        Tasks completed 
-                    </p> 
-
-                </div> 
-
-
-                <div class="stat-card"> 
-
-                    <div class="stat-icon yellow"> 
-                        ◷ 
-                    </div> 
-
-
-                    <h3> 
-                        Outstanding Tasks 
-                    </h3> 
-
- 
-                    <strong id="outstandingTasks"> 
-                        0
-                    </strong> 
-
- 
-                    <p> 
-                        Tasks remaining 
-                    </p> 
-
-                </div> 
-
- 
-                <div class="stat-card"> 
-
-                    <div class="stat-icon purple"> 
-                        📋 
-                    </div> 
-
- 
-                    <h3> 
-                        Total Tasks 
-                    </h3> 
-
-
-                    <strong id="totalTasks"> 
-                        0 
-                    </strong> 
-
-
-                    <p> 
-                        Tasks created 
-                    </p> 
-
-                </div> 
-
- 
-                <div class="stat-card"> 
-
-                    <div class="stat-icon pink"> 
-                        📅 
-                    </div> 
-
-
-                    <h3> 
-                        Support Sessions 
-                    </h3> 
-
- 
-                    <strong id="supportSessions"> 
-                        0 
-                    </strong> 
-
-                    <p> 
-                        Upcoming sessions 
-                    </p> 
-
-                </div> 
-
-            </section> 
-
-
-            <!-- ========================= 
-
-                 MIDDLE SECTION 
-
-            ========================== --> 
-
-            <section class="middle"> 
-
- 
-                <!-- LEARNER PROGRESS --> 
-
-                <div class="card"> 
-
-                    <div class="card-header"> 
-
-                        <h2> 
-                            Learner Progress Overview 
-                        </h2> 
-
-
-                        <button> 
-                            All Learners ▼ 
-                        </button> 
-
-
-                    </div> 
-
- 
-                    <div class="progress-content"> 
-
- 
-                        <div class="circle-progress"> 
-
-                            <strong>
-                                0% 
-                            </strong> 
-
-
-                            <small> 
-                                Average Progress 
-                            </small> 
-
-                        </div> 
- 
-
-                        <div class="progress-list"> 
-
-                            <p> 
-                                🟢 On Track 
-
-                                <span> 
-                                    0 learners 
-                                </span> 
-
-                            </p> 
-
-
-                            <p> 
-                                🟡 At Risk 
-                                <span> 
-                                    0 learners 
-                                </span> 
-                            </p> 
-
-
-                            <p> 
-                                🔴 Needs Attention 
-                                <span> 
-                                    0 learners 
-                                </span> 
-                            </p>
-
-                        </div> 
-
-                    </div> 
-
- 
-                    <a href="#"> 
-                        View learner progress → 
-                    </a> 
-
-                </div> 
-
-                <!-- TASK OVERVIEW --> 
-
-                <div class="card"> 
-
-                    <div class="card-header"> 
-
-                        <h2> 
-                            Task Overview 
-                        </h2> 
-
- 
-                        <a href="#"> 
-                            View all 
-                        </a> 
-
-                    </div> 
-
-
-
-                    <div class="due-item yellow-box"> 
-
-                        <span> 
-                            ◷ 
-                        </span> 
-
-
-                        <div> 
-
-                            <p> 
-                                Due Soon 
-                            </p> 
-
-
-                            <strong> 
-                                0 
-                            </strong> 
-
-                        </div> 
-
-                        <span> 
-                            › 
-                        </span> 
-
-                    </div> 
-
- 
-
-                    <div class="due-item red-box"> 
-
-                        <span> 
-                            ! 
-                        </span> 
-
-                        <div> 
-
-                            <p> 
-                                Overdue 
-                            </p> 
-
-
-                            <strong> 
-                                0 
-                            </strong> 
-
-                        </div> 
-
-                        <span> 
-                            ›
-                        </span> 
-
-                    </div> 
-
- 
-                    <div class="due-item grey-box"> 
-
- 
-                        <span> 
-                            ✓ 
-                        </span> 
-
-
-                        <div> 
-
-                            <p> 
-                                Completed 
-                            </p> 
-
-
-                            <strong id="taskOverviewCompleted"> 
-                                0 
-                            </strong> 
-
-                        </div> 
-
-                        <span> 
-                            › 
-                        </span> 
-
-                    </div> 
-
-                </div> 
-
-            </section> 
-
- 
-            <!-- ========================= 
-
-                 RECENT TASKS 
-
-            ========================== --> 
-
-            <section class="card"> 
-
-                <div class="card-header"> 
-
-                    <h2>
-                        Recent Tasks 
-                    </h2> 
-
-                    <a href="#"> 
-                        View all 
-                    </a> 
-
-                </div> 
-
-                <div id="taskList"> 
-
-                    <div class="empty-message"> 
-                        Loading tasks... 
-                    </div> 
-
-                </div> 
-
-            </section> 
-
- 
-            <!-- ========================= 
-
-                 LEARNERS + RESOURCES 
-
-            ========================== --> 
-
-            <section class="bottom-grid"> 
-
-                <!-- LEARNERS --> 
-
-                <div class="card"> 
-
-                    <div class="card-header"> 
-
-                        <h2> 
-                            Learners 
-                        </h2> 
-
-                        <a href="#"> 
-                            View all 
-                        </a> 
-
-                    </div> 
-
- 
-                    <div class="table-container"> 
-
-                        <table> 
-
-                            <thead> 
-
-                                <tr> 
-
-                                    <th> 
-                                        Learner 
-                                    </th> 
-
-                                    <th> 
-                                     Email 
-                                    </th> 
-
-                                    <th> 
-                                        Action 
-                                    </th> 
-                                </tr> 
-                            </thead> 
-
-
-                            <tbody id="learnerList"> 
-
-                                <tr> 
-                                    <td colspan="3"> 
-                                        Loading learners... 
-                                    </td> 
-
-                                </tr> 
-                            </tbody> 
-
-                        </table> 
-                    </div> 
-                </div> 
-
-
-                <!-- RESOURCES --> 
-
-                <div class="card"> 
-
- 
-                    <div class="card-header"> 
-                        <h2> 
-                            Recent Resources 
-                        </h2> 
-
-                        <a href="#"> 
-                            View all 
-                        </a> 
-                    </div> 
-
-
-                    <div id="resourceList"> 
-                        <div class="empty-message"> 
-                            Loading resources... 
-                        </div> 
-                    </div> 
-
-                </div> 
-
-            </section> 
-
- 
-
-            <section class="card"> 
-
-                <h2> 
-                    Quick Actions 
-                </h2> 
-
-                <div class="quick-actions"> 
-
-                    <button id="addTaskButton"> 
-                        <span> 
-                            ＋ 
-                        </span> 
-
-                        <small> 
-                            Add Task 
-                        </small> 
-                    </button> 
-
-
-                    <button id="addResourceButton"> 
-                        <span> 
-                            📚 
-                        </span> 
-
-                        <small> 
-                            Add Resource 
-                        </small> 
-                    </button> 
-
-                    <button id="bookSessionButton"> 
-                        <span> 
-                            📅 
-                        </span> 
-
-                        <small> 
-                            Book Session 
-                        </small> 
-                    </button> 
-
- 
-                    <button id="messageLearnersButton"> 
-                        <span> 
-                            💬 
-                        </span> 
-
-                        <small> 
-                            Message Learners 
-                        </small> 
-                    </button> 
-
-                </div> 
-
-            </section> 
-
-        </main> 
-
-    </div> 
-
-    <script 
-        type="module"
-        src="facilitator-dashboard.js"> 
-    </script> 
-</body> 
-</html> 
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Facilitator Dashboard | LearnerHub</title>
+
+	<link rel="stylesheet" href="facilitator-dashboard.css">
+	<script type="module" src="facilitator-dashboard.js" defer></script>
+</head>
+
+<body>
+	<main class="dashboard-shell">
+
+		<!-- Dashboard header -->
+		<header class="dashboard-header">
+			<div>
+				<p class="eyebrow">LearnerHub</p>
+
+				<h1>Facilitator dashboard</h1>
+
+				<p id="facilitatorWelcome" class="muted">
+					Checking your Firebase session...
+				</p>
+			</div>
+
+			<button id="logoutButton" type="button">
+				Sign out
+			</button>
+		</header>
+
+
+		<!-- Facilitator tools -->
+		<section class="dashboard-grid" aria-label="Facilitator tools">
+
+			<article>
+				<h2>Registered learners</h2>
+				<p class="metric" id="learnerTotal">0</p>
+				<p class="muted">Learners in your programme list</p>
+			</article>
+
+
+			<article>
+				<h2>Needs support</h2>
+				<p class="metric" id="supportNeededTotal">0</p>
+				<p class="muted">Unresolved failure or inactivity for 7+ days</p>
+			</article>
+
+
+			<article>
+				<h2>Facilitator role</h2>
+				<p class="metric" id="roleValue">Loading...</p>
+			</article>
+
+		</section>
+
+
+		<!-- Registered learners -->
+		<section class="learners-section" aria-labelledby="learnersHeading">
+
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Learner management</p>
+
+					<h2 id="learnersHeading">
+						Registered learners
+					</h2>
+
+					<p class="muted">
+						These are the learners registered
+						on LearnerHub.
+					</p>
+				</div>
+
+				<span id="learnerCount" class="learner-count">
+					0 learners
+				</span>
+			</div>
+
+
+			<!-- Learners will be inserted here by JavaScript -->
+			<div id="learnerList" class="learner-list" aria-live="polite">
+				<p class="muted">
+					Loading learners...
+				</p>
+			</div>
+
+				<section id="learnerDetail" class="learner-detail" aria-labelledby="selectedLearnerName" hidden>
+					<header class="detail-header">
+						<div>
+						<p class="eyebrow">Learner activity</p>
+						<h2 id="selectedLearnerName">Selected learner</h2>
+						<p id="selectedLearnerMeta" class="muted"></p>
+					</div>
+					<div class="detail-actions">
+						<button id="printFullReport" class="secondary-button" type="button">Print full report (PDF)</button>
+						<button id="closeLearnerDetail" class="secondary-button" type="button">Back to learners</button>
+					</div>
+					</header>
+
+					<div class="learner-overview">
+						<div class="overall-progress-overview">
+							<span>Overall programme progress</span>
+							<strong id="selectedOverallProgress">0%</strong>
+							<progress id="selectedProgressBar" class="overall-progress-bar" max="5" value="0"
+								aria-label="Overall programme progress: 0 of 5 stages complete"></progress>
+							<small id="selectedStageCount">0 / 5 stages complete</small>
+						</div>
+						<div><span>Latest assessment</span><strong id="selectedAssessmentScore">No attempt</strong></div>
+						<div><span>Support status</span><strong id="selectedSupportStatus">Loading...</strong></div>
+					</div>
+
+					<div class="learner-view-filter">
+						<label for="learnerViewSelector">Choose learner information to view</label>
+						<select id="learnerViewSelector">
+							<option value="">Select a section</option>
+							<option value="stageProgressSection">Programme stage progress</option>
+							<option value="activitySection">Game and assessment activity</option>
+							<option value="bookingsSection">Support bookings</option>
+						</select>
+					</div>
+
+					<section id="stageProgressSection" class="detail-section learner-view-section" aria-labelledby="stageProgressHeading" hidden>
+						<h3 id="stageProgressHeading">Programme stage progress</h3>
+						<div class="stage-progress-filter">
+							<label for="stageProgressSelector">Select a programme stage</label>
+							<select id="stageProgressSelector">
+								<option value="">All stages</option>
+								<option value="html">Stage 1: HTML Quiz</option>
+								<option value="rps">Stage 2: Rock, Paper, Scissors</option>
+								<option value="css">Stage 3: CSS Quiz</option>
+								<option value="chess">Stage 4: Chess</option>
+								<option value="javascript">Stage 5: JavaScript Quiz</option>
+							</select>
+						</div>
+						<ol id="stageProgressList" class="stage-progress-list" aria-label="Programme stages in order"></ol>
+					</section>
+
+					<section id="activitySection" class="detail-section learner-view-section" aria-labelledby="activityHeading" hidden>
+						<h3 id="activityHeading">Game and assessment activity</h3>
+						<div id="learnerActivityList" class="activity-list"></div>
+					</section>
+
+					<section id="bookingsSection" class="detail-section learner-view-section" aria-labelledby="bookingsHeading" hidden>
+						<h3 id="bookingsHeading">Support bookings</h3>
+						<div id="learnerBookingsList" class="activity-list"></div>
+					</section>
+
+					<div class="learner-tools-grid">
+						<section class="detail-section booking-section" aria-labelledby="bookSessionHeading">
+							<h3 id="bookSessionHeading">Book a support session</h3>
+							<form id="bookingForm" class="booking-form">
+								<label for="bookingTopic">Session topic</label>
+								<input id="bookingTopic" name="topic" maxlength="100" required placeholder="e.g. Review JavaScript fundamentals">
+								<label for="bookingDate">Preferred date</label>
+								<input id="bookingDate" name="preferredDate" type="date" required>
+								<label for="bookingNotes">Notes for the learner</label>
+								<textarea id="bookingNotes" name="notes" maxlength="500" rows="3" placeholder="Add preparation details or a meeting location"></textarea>
+								<button id="bookSessionButton" type="submit">Book session</button>
+							</form>
+						</section>
+
+						<section class="detail-section booking-section" aria-labelledby="assessmentAssignmentHeading">
+							<h3 id="assessmentAssignmentHeading">Assign an assessment</h3>
+							<form id="assessmentAssignmentForm" class="booking-form">
+								<label for="assessmentType">Assessment</label>
+								<select id="assessmentType" name="assessment" required>
+									<option value="skills-assessment">Software Development Skills Assessment</option>
+								</select>
+								<button id="assignAssessmentButton" type="submit">Send assessment</button>
+							</form>
+							<h4 class="assigned-assessments-heading">Assigned assessment status</h4>
+							<div id="assessmentAssignmentsList" class="activity-list" aria-live="polite">
+								<p class="muted">Select a learner to view their assessments.</p>
+							</div>
+						</section>
+					</div>
+				</section>
+
+				<section id="printReport" class="print-report" hidden aria-hidden="true"></section>
+
+		</section>
+
+
+		<!-- Firebase status / errors -->
+		<p id="dashboardMessage" class="message" role="status" aria-live="polite"></p>
+
+	</main>
+</body>
+</html>
