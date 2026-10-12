@@ -1,2 +1,17 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 .stage2-rps .rps-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
 .stage2-rps .rps-choice { min-width: 120px; }
