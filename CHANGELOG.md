@@ -88,7 +88,21 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 
 ### Fixed (learner-progress.js)
 - Overdue Tasks counter always showed 0. It is now calculated from each task's due date (incomplete tasks with a past due date).
+- Overdue task counts now validate date-only values, normalize saved completion states, and refresh at local midnight or when the dashboard becomes active.
+- Overdue task calculation now uses the same completion normalization as task totals, counting only unfinished tasks with past due dates.
+- Adding a task now immediately refreshes task metrics, including the overdue count when its due date is before today.
+- The task-only metric now counts every incomplete task regardless of due date and is labeled "Tasks To Do" to distinguish it from overdue tasks.
+- The outstanding-goals metric now counts only incomplete goals; task changes no longer affect it.
+- Goal and task totals now consistently normalize legacy completion values, count only completed items toward progress, and use the actual programme-stage count.
+- Outstanding count now includes incomplete goals as well as incomplete tasks, with the dashboard label updated to match.
+- Goal rows now have clear completion, edit, and delete interactions, with clickable goal text and accessible action labels.
+- Task rows now match goal interactions with clickable completion controls, task editing (including due date), and deletion.
+- Task delete buttons now display as clear, high-contrast controls aligned inside the task card, including on narrow screens.
+- Programme stages now show overall completion progress and per-stage completion bars that update when a stage is passed.
 - "Book New Session" button did nothing. Added the booking form, which saves to Firestore (`bookings`) and appears in My Support Bookings.
+- Learner booking writes were rejected by Firestore. Rules now allow a learner to create a validated booking for their own account.
+- Support bookings now update live in the facilitator dashboard, with facilitator editing, assignment, and a two-way message thread secured to the learner and assigned facilitator.
+- Facilitators now have a live support booking inbox on the dashboard with learner names, request details, and a direct link to respond.
 - Support Bookings counter counted every booking. It now counts upcoming sessions only (not completed or cancelled).
 - "Preview empty states" only opened a generic popup. It now switches the dashboard to its real empty states and back, without touching saved data.
 - Assessment progress bar stayed stuck if the quiz was closed part-way. It now resets on close.
@@ -115,6 +129,6 @@ All notable changes and updates to the SkillsTrack Learner Support Portal projec
 - learner-progress.html (no changes needed).
 
 ### To check
-- Firestore rules must allow learners to create documents in `bookings` (and in `scores` and `learnerProgress` for the quiz).
+- Firestore rules for learner bookings, scores, and learner progress must be published with `firebase deploy --only firestore:rules`.
 - Quiz behaviour depends on `QuizGame.js` and `ProgressManager.js`, which haven't been reviewed yet.
  

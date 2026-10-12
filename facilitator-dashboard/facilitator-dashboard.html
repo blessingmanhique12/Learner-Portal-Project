@@ -13,7 +13,11 @@
 </head>
 
 <body>
-	<main class="dashboard-shell">
+	<div id="facilitatorLoading" class="facilitator-loading" role="status" aria-live="polite">
+		<span class="loading-spinner" aria-hidden="true"></span>
+		<span>Loading your facilitator dashboard...</span>
+	</div>
+	<main class="dashboard-shell" id="facilitatorDashboard" hidden>
 
 		<!-- Dashboard header -->
 		<header class="dashboard-header">
@@ -55,6 +59,21 @@
 				<p class="metric" id="roleValue">Loading...</p>
 			</article>
 
+		</section>
+
+
+		<section class="support-bookings-inbox" aria-labelledby="supportBookingsHeading">
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Learner requests</p>
+					<h2 id="supportBookingsHeading">Support booking inbox</h2>
+					<p class="muted">New learner requests appear here. Open a booking to respond or update it.</p>
+				</div>
+				<strong id="supportBookingCount" class="learner-count">0 bookings</strong>
+			</div>
+			<div id="supportBookingInbox" class="support-booking-list" aria-live="polite">
+				<p class="muted">Loading support bookings...</p>
+			</div>
 		</section>
 
 

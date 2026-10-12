@@ -166,11 +166,16 @@ const createInitialState = () => ({
   }
 });
 
+function isItemCompleted(value) {
+  return value === true || value === 1 || value === "true";
+}
+
 let state = createInitialState();
 let stateStorageKey = null;
 let progressManager = new ProgressManager();
 let progressRepository = null;
 let unsubscribeBookings = null;
+let bookingMessageUnsubscribes = new Map();
 let unsubscribeAssignments = null;
 let previewEmpty = false; // [NEW] true while "Preview empty states" is switched on
 
@@ -306,12 +311,12 @@ function loadState() {
       goals: (parsed.goals || []).map((goal) =>
         typeof goal === "string"
           ? { title: goal, completed: false }
-          : { ...goal, completed: Boolean(goal.completed) }
+          : { ...goal, completed: isItemCompleted(goal.completed) }
       ),
       tasks: (parsed.tasks || []).map((task) =>
         typeof task === "string"
           ? { title: task, completed: false }
-          : { ...task, completed: Boolean(task.completed) }
+          : { ...task, completed: isItemCompleted(task.completed) }
       )
     };
 
@@ -397,18 +402,34 @@ modal.addEventListener(
    (overdue check, upcoming bookings, empty-state preview)
 ========================= */
 
-// Today's date as "YYYY-MM-DD" (same format as the date input)
-function getTodayString() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
+// Format local calendar dates without converting date-only values through UTC.
+function getDateKey(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
-// Overdue = has a due date, is not completed, and the date has passed
-function isTaskOverdue(task) {
-  return Boolean(task.dueDate) && !task.completed && task.dueDate < getTodayString();
+function isValidDateKey(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const parsedDate = new Date(year, month - 1, day);
+  return parsedDate.getFullYear() === year
+    && parsedDate.getMonth() === month - 1
+    && parsedDate.getDate() === day;
 }
+
+// Today's date as "YYYY-MM-DD" (same format as the date input)
+function getTodayString() {
+  return getDateKey(new Date());
+}
+
+window.addEventListener("focus", updateDashboardProgress);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") updateDashboardProgress();
+});
 
 // Upcoming = not completed and not cancelled
 function isBookingUpcoming(booking) {
@@ -455,18 +476,21 @@ function renderGoals() {
   list.innerHTML = goals.length
     ? goals
       .map(function (goal, index) {
+        const goalInputId = `goal-check-${index}`;
 
         return `
           <div class="goal-row ${goal.completed ? "completed" : ""}">
             <input
               class="goal-check"
               type="checkbox"
+              id="${goalInputId}"
               data-goal-toggle="${index}"
               aria-label="Mark ${escapeHtml(goal.title)} complete"
               ${goal.completed ? "checked" : ""}
             >
-            <span class="goal-text">${escapeHtml(goal.title)}</span>
-            <button class="delete-task" type="button" data-goal-delete="${index}" aria-label="Delete ${escapeHtml(goal.title)}">×</button>
+            <label class="goal-text" for="${goalInputId}">${escapeHtml(goal.title)}</label>
+            <button class="goal-edit-button" type="button" data-goal-edit="${index}" aria-label="Edit ${escapeHtml(goal.title)}">Edit</button>
+            <button class="delete-task" type="button" data-goal-delete="${index}" aria-label="Delete ${escapeHtml(goal.title)}">Delete</button>
           </div>
         `;
 
@@ -495,7 +519,40 @@ function renderGoals() {
     });
   });
 
+  list.querySelectorAll("[data-goal-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      editGoal(Number(button.dataset.goalEdit));
+    });
+  });
+
   updateDashboardProgress();
+}
+
+function editGoal(index) {
+  const goal = state.goals[index];
+  if (!goal) return;
+
+  openModal(`
+    <h2 class="modal-title">Edit goal</h2>
+    <form id="editGoalForm">
+      <div class="form-group">
+        <label for="editGoalInput">Goal</label>
+        <input id="editGoalInput" required maxlength="80" value="${escapeHtml(goal.title)}">
+      </div>
+      <button class="primary-btn" type="submit">Save goal</button>
+    </form>
+  `);
+
+  document.getElementById("editGoalForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const title = document.getElementById("editGoalInput").value.trim();
+    if (!title) return;
+
+    state.goals[index] = { ...goal, title };
+    saveState();
+    renderGoals();
+    closeModal();
+  });
 }
 
 // [REMOVED] The old leftover "DELETE BUTTONS" block that used to sit here.
@@ -511,32 +568,16 @@ function updateDashboardProgress() {
 
   const { goals, tasks } = getVisibleData();
 
-  const outstanding =
-    tasks.filter(
-      function (task) {
-        return !task.completed;
-      }
-    ).length;
+  const outstanding = goals.filter((goal) => !isItemCompleted(goal.completed)).length;
+  const incompleteTasks = tasks.filter((task) => !isItemCompleted(task.completed)).length;
 
-  const overdue =
-    tasks.filter(isTaskOverdue).length;
+  document.getElementById("outstandingCount").textContent = outstanding;
+  document.getElementById("overdueCount").textContent = incompleteTasks;
 
-
-  document.getElementById(
-    "outstandingCount"
-  ).textContent =
-    outstanding;
-
-
-  document.getElementById(
-    "overdueCount"
-  ).textContent =
-    overdue;
-
-  const completedGames = Object.values(state.games).filter(Boolean).length;
-  const completedGoals = goals.filter((goal) => goal.completed).length;
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const totalItems = 5 + goals.length + tasks.length;
+  const completedGames = stageKeys.filter((stage) => isItemCompleted(state.games[stage])).length;
+  const completedGoals = goals.filter((goal) => isItemCompleted(goal.completed)).length;
+  const completedTasks = tasks.filter((task) => isItemCompleted(task.completed)).length;
+  const totalItems = stageKeys.length + goals.length + tasks.length;
   const percentage = totalItems
     ? Math.round(((completedGames + completedGoals + completedTasks) / totalItems) * 100)
     : 0;
@@ -546,16 +587,38 @@ function updateDashboardProgress() {
 }
 
 function renderStageButtons() {
+  const completedCount = stageKeys.filter((stage) => isItemCompleted(state.games[stage])).length;
+  const progressText = document.getElementById("stageProgressText");
+  const progressBar = document.getElementById("stageProgressBar");
+  const progressFill = document.getElementById("stageProgressFill");
+  const percentage = Math.round((completedCount / stageKeys.length) * 100);
+
+  if (progressText) {
+    progressText.textContent = `${completedCount} of ${stageKeys.length} stages complete`;
+  }
+  if (progressBar) {
+    progressBar.setAttribute("aria-valuenow", String(completedCount));
+  }
+  if (progressFill) {
+    progressFill.style.width = `${percentage}%`;
+  }
+
   document.querySelectorAll(".stage-btn").forEach((button) => {
-    const stageNumber = stageKeys.indexOf(button.dataset.stage) + 1;
+    const stage = button.dataset.stage;
+    const stageNumber = stageKeys.indexOf(stage) + 1;
+    const complete = isItemCompleted(state.games[stage]);
     const available = progressManager.canStartStage(stageNumber);
     const currentStage = stageKeys.find((stage) => !state.games[stage]);
     button.disabled = false;
     button.setAttribute("aria-disabled", String(!available));
+    button.setAttribute("aria-label", `${button.querySelector(".stage-btn-title").textContent}, ${complete ? "complete" : "not complete"}`);
+    button.classList.toggle("complete", complete);
     button.classList.toggle("locked", !available);
     button.title = available
       ? "Open this stage"
       : `Pass ${stageLabel(currentStage)} with at least ${PASS_MARK}% to unlock this stage`;
+    button.querySelector(".stage-btn-track > span").style.width = complete ? "100%" : "0%";
+    button.querySelector(".stage-btn-status").textContent = complete ? "Complete" : "Not complete";
   });
 }
 
@@ -669,6 +732,8 @@ function renderBookings() {
 
   if (!list) return;
 
+  bookingMessageUnsubscribes.forEach((unsubscribe) => unsubscribe());
+  bookingMessageUnsubscribes.clear();
   if (count) count.textContent = bookings.filter(isBookingUpcoming).length;
   list.replaceChildren();
 
@@ -702,7 +767,38 @@ function renderBookings() {
       notes.textContent = booking.notes || "No additional notes.";
 
       item.append(heading, date, notes);
-      if (booking.status !== "completed") {
+      const thread = document.createElement("section");
+      thread.className = "booking-thread";
+      thread.setAttribute("aria-label", `Conversation about ${booking.topic || "support session"}`);
+      const threadHeading = document.createElement("h3");
+      threadHeading.textContent = "Conversation with your support team";
+      const messages = document.createElement("div");
+      messages.className = "booking-messages";
+      messages.setAttribute("aria-live", "polite");
+      messages.textContent = "Loading conversation...";
+      thread.append(threadHeading, messages);
+      const replyForm = document.createElement("form");
+      replyForm.className = "booking-reply-form";
+      const reply = document.createElement("textarea");
+      reply.required = true;
+      reply.maxLength = 1000;
+      reply.rows = 2;
+      reply.placeholder = "Write a message to your facilitator";
+      reply.setAttribute("aria-label", "Message to your facilitator");
+      const send = document.createElement("button");
+      send.type = "submit";
+      send.className = "booking-complete-button";
+      send.textContent = "Send message";
+      replyForm.append(reply, send);
+      thread.appendChild(replyForm);
+      item.appendChild(thread);
+      subscribeToBookingMessages(booking, messages);
+      replyForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendBookingMessage(booking, reply, send);
+      });
+
+      if (["pending", "confirmed"].includes(booking.status || "pending")) {
         const completeButton = document.createElement("button");
         completeButton.type = "button";
         completeButton.className = "booking-complete-button";
@@ -712,6 +808,73 @@ function renderBookings() {
       }
       list.appendChild(item);
     });
+}
+
+function subscribeToBookingMessages(booking, container) {
+  const messagesQuery = query(collection(db, "bookings", booking.id, "messages"));
+  const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+    const messages = snapshot.docs
+      .map((messageDocument) => ({ id: messageDocument.id, ...messageDocument.data() }))
+      .sort((first, second) => {
+        const firstTime = first.createdAt?.toMillis?.() || 0;
+        const secondTime = second.createdAt?.toMillis?.() || 0;
+        return firstTime - secondTime;
+      });
+    container.replaceChildren();
+    if (messages.length === 0) {
+      container.textContent = "No messages yet. Send a message to start the conversation.";
+      return;
+    }
+
+    messages.forEach((message) => {
+      const entry = document.createElement("article");
+      entry.className = `booking-message ${message.authorRole === "learner" ? "from-learner" : "from-facilitator"}`;
+      const author = document.createElement("strong");
+      author.textContent = message.authorRole === "learner" ? "You" : message.authorName || "Facilitator";
+      const text = document.createElement("p");
+      text.textContent = message.text;
+      entry.append(author, text);
+      container.appendChild(entry);
+    });
+  }, (error) => {
+    console.error("Could not load support booking conversation:", error);
+    container.textContent = error.code === "permission-denied"
+      ? "You do not have access to this conversation."
+      : "Messages could not be loaded. Please try again later.";
+  });
+  bookingMessageUnsubscribes.set(booking.id, unsubscribe);
+}
+
+async function sendBookingMessage(booking, input, button) {
+  const text = input.value.trim();
+  const user = auth.currentUser;
+  if (!text || !user) return;
+
+  button.disabled = true;
+  try {
+    const profileSnapshot = await getDoc(doc(db, "registrations", user.uid));
+    const profile = profileSnapshot.exists() ? profileSnapshot.data() : {};
+    await addDoc(collection(db, "bookings", booking.id, "messages"), {
+      authorId: user.uid,
+      authorName: profile.displayName || profile.username || user.displayName || user.email || "Learner",
+      authorRole: "learner",
+      text,
+      createdAt: serverTimestamp()
+    });
+    input.value = "";
+  } catch (error) {
+    console.error("Could not send support booking message:", error);
+    openModal(`
+      <h2 class="modal-title">Message could not be sent</h2>
+      <p class="modal-subtitle">${error.code === "permission-denied"
+        ? "Access to this booking conversation was denied. Contact your administrator."
+        : "Check your connection and try again."}</p>
+      <button class="primary-btn" id="bookingMessageErrorCloseBtn" type="button">Close</button>
+    `);
+    document.getElementById("bookingMessageErrorCloseBtn").addEventListener("click", closeModal);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function completeLearnerBooking(booking, button) {
@@ -842,23 +1005,30 @@ function renderTasks() {
 
   if (list) {
     list.innerHTML = tasks.length // [CHANGED]
-      ? tasks.map((task, index) => `
+      ? tasks.map((task, index) => {
+        const taskInputId = `task-check-${index}`;
+        return `
           <div class="task-row ${task.completed ? "completed" : ""}">
             <input
               class="task-check"
               type="checkbox"
+              id="${taskInputId}"
               data-task-toggle="${index}"
               aria-label="Mark ${escapeHtml(task.title)} complete"
               ${task.completed ? "checked" : ""}
             >
             <div class="task-main">
-              <span class="task-name">${escapeHtml(task.title)}</span>
+              <label class="task-name" for="${taskInputId}">${escapeHtml(task.title)}</label>
               ${task.dueDate ? `<span class="task-due">Due ${escapeHtml(task.dueDate)}</span>` : ""}
             </div>
             <span class="status ${task.completed ? "completed" : "outstanding"}">${task.completed ? "completed" : "outstanding"}</span>
-            <button class="delete-task" type="button" data-task-delete="${index}" aria-label="Delete ${escapeHtml(task.title)}">×</button>
+            <div class="task-actions">
+              <button class="goal-edit-button" type="button" data-task-edit="${index}" aria-label="Edit ${escapeHtml(task.title)}">Edit</button>
+              <button class="delete-task" type="button" data-task-delete="${index}" aria-label="Delete ${escapeHtml(task.title)}">Delete</button>
+            </div>
           </div>
-        `).join("")
+        `;
+      }).join("")
       : '<div class="empty-state">No tasks yet.</div>'; // [CHANGED]
 
     list.querySelectorAll("[data-task-toggle]").forEach((checkbox) => {
@@ -876,9 +1046,50 @@ function renderTasks() {
         renderTasks();
       });
     });
+
+    list.querySelectorAll("[data-task-edit]").forEach((button) => {
+      button.addEventListener("click", () => {
+        editTask(Number(button.dataset.taskEdit));
+      });
+    });
   }
 
   updateDashboardProgress();
+}
+
+function editTask(index) {
+  const task = state.tasks[index];
+  if (!task) return;
+
+  openModal(`
+    <h2 class="modal-title">Edit task</h2>
+    <form id="editTaskForm">
+      <div class="form-group">
+        <label for="editTaskInput">Task</label>
+        <input id="editTaskInput" required maxlength="100" value="${escapeHtml(task.title)}">
+      </div>
+      <div class="form-group">
+        <label for="editTaskDueDate">Due date</label>
+        <input id="editTaskDueDate" type="date" value="${isValidDateKey(task.dueDate) ? task.dueDate : ""}">
+      </div>
+      <button class="primary-btn" type="submit">Save task</button>
+    </form>
+  `);
+
+  document.getElementById("editTaskForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const title = document.getElementById("editTaskInput").value.trim();
+    if (!title) return;
+
+    state.tasks[index] = {
+      ...task,
+      title,
+      dueDate: document.getElementById("editTaskDueDate").value
+    };
+    saveState();
+    renderTasks();
+    closeModal();
+  });
 }
 
 function showLearnerProfile(user, profile) {
@@ -1036,7 +1247,11 @@ document
         // [REMOVED] "overdue: false" - overdue is now worked out from dueDate
       });
       saveState();
-      setEmptyPreview(false); // [CHANGED] switches preview off (if on) and re-draws everything
+      if (previewEmpty) {
+        setEmptyPreview(false);
+      } else {
+        renderTasks();
+      }
       closeModal();
     });
   });
@@ -1102,7 +1317,9 @@ document
       } catch (error) {
         console.error("Could not book support session:", error);
         submitButton.disabled = false;
-        feedback.textContent = "The session could not be booked. Check your connection and try again.";
+        feedback.textContent = error.code === "permission-denied"
+          ? "Your booking was blocked by Firestore. Ask the administrator to publish the latest Firestore rules."
+          : "The session could not be booked. Check your connection and try again.";
         feedback.style.color = "#d54c4c";
       }
     });
@@ -1812,6 +2029,8 @@ onAuthStateChanged(auth, async (user) => {
       unsubscribeBookings();
       unsubscribeBookings = null;
     }
+    bookingMessageUnsubscribes.forEach((unsubscribe) => unsubscribe());
+    bookingMessageUnsubscribes.clear();
     if (unsubscribeAssignments) {
       unsubscribeAssignments();
       unsubscribeAssignments = null;

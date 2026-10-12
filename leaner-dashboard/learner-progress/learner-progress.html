@@ -70,17 +70,17 @@
           </article>
           <article class="card stat-card">
             <div>
-              <p>Outstanding Tasks</p>
+              <p>Outstanding Goals</p>
               <strong id="outstandingCount">0</strong>
-              <span>Tasks remaining</span>
+              <span>Goals remaining</span>
             </div>
             <span class="circle-icon blue">☷</span>
           </article>
           <article class="card stat-card">
             <div>
-              <p>Overdue Tasks</p>
+              <p>Tasks To Do</p>
               <strong class="danger" id="overdueCount">0</strong>
-              <span>Tasks past due</span>
+              <span>Incomplete tasks</span>
             </div>
             <span class="circle-icon red">◷</span>
           </article>
@@ -172,12 +172,49 @@
             </div>
             <button class="secondary-btn small" id="restartAllBtn">Restart all</button>
           </div>
+          <div class="stage-progress-summary">
+            <div class="stage-progress-summary-label">
+              <span>Programme stage progress</span>
+              <strong id="stageProgressText">0 of 5 stages complete</strong>
+            </div>
+            <div
+              class="stage-progress-track"
+              role="progressbar"
+              aria-label="Programme stage progress"
+              aria-valuemin="0"
+              aria-valuemax="5"
+              aria-valuenow="0"
+              id="stageProgressBar"
+            >
+              <span id="stageProgressFill"></span>
+            </div>
+          </div>
           <div class="stage-grid">
-            <button class="stage-btn" data-stage="html">Stage 1: HTML Quiz</button>
-            <button class="stage-btn" data-stage="rps">Stage 2: Rock, Paper, Scissors</button>
-            <button class="stage-btn" data-stage="css">Stage 3: CSS Quiz</button>
-            <button class="stage-btn" data-stage="chess">Stage 4: Chess</button>
-            <button class="stage-btn" data-stage="javascript">Stage 5: JavaScript Quiz</button>
+            <button class="stage-btn" data-stage="html">
+              <span class="stage-btn-title">Stage 1: HTML Quiz</span>
+              <span class="stage-btn-track" aria-hidden="true"><span></span></span>
+              <span class="stage-btn-status">Not complete</span>
+            </button>
+            <button class="stage-btn" data-stage="rps">
+              <span class="stage-btn-title">Stage 2: Rock, Paper, Scissors</span>
+              <span class="stage-btn-track" aria-hidden="true"><span></span></span>
+              <span class="stage-btn-status">Not complete</span>
+            </button>
+            <button class="stage-btn" data-stage="css">
+              <span class="stage-btn-title">Stage 3: CSS Quiz</span>
+              <span class="stage-btn-track" aria-hidden="true"><span></span></span>
+              <span class="stage-btn-status">Not complete</span>
+            </button>
+            <button class="stage-btn" data-stage="chess">
+              <span class="stage-btn-title">Stage 4: Chess</span>
+              <span class="stage-btn-track" aria-hidden="true"><span></span></span>
+              <span class="stage-btn-status">Not complete</span>
+            </button>
+            <button class="stage-btn" data-stage="javascript">
+              <span class="stage-btn-title">Stage 5: JavaScript Quiz</span>
+              <span class="stage-btn-track" aria-hidden="true"><span></span></span>
+              <span class="stage-btn-status">Not complete</span>
+            </button>
           </div>
         </section>
       </section>

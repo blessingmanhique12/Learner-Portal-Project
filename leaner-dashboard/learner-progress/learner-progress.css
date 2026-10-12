@@ -510,6 +510,63 @@ button {
   color: #3f5664;
 }
 
+.booking-thread {
+  margin-top: 12px;
+  border-top: 1px solid #edf1f4;
+  padding-top: 10px;
+}
+
+.booking-thread h3 {
+  margin: 0 0 8px;
+  color: #314a59;
+  font-size: 13px;
+}
+
+.booking-messages {
+  display: grid;
+  gap: 7px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.booking-message {
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #f1f6f9;
+  overflow-wrap: anywhere;
+}
+
+.booking-message.from-learner {
+  background: #e7f3fb;
+}
+
+.booking-message strong {
+  color: #314a59;
+  font-size: 11px;
+}
+
+.booking-message p {
+  margin: 3px 0 0;
+  color: #3f5664;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
+.booking-reply-form {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.booking-reply-form textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #cbd6dd;
+  border-radius: 5px;
+  padding: 8px;
+  font: inherit;
+}
+
 .assigned-assessments-card {
   background: #f8fbfd;
   max-width: 1100px;
@@ -578,23 +635,38 @@ button {
 .goal-check {
   width: 18px;
   height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #e0f6f2;
-  color: #2eaa9c;
-  font-size: 9px;
+  flex: 0 0 auto;
+  accent-color: #1680ca;
+  cursor: pointer;
 }
 
 .goal-text {
+  flex: 1;
   color: #456174;
   font-size: 15px;
   font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
 }
 
 .goal-row.completed .goal-text {
   color: #98a5ad;
   text-decoration: line-through;
+}
+
+.goal-edit-button {
+  border: 1px solid #cbd6dd;
+  border-radius: 4px;
+  padding: 5px 9px;
+  color: #126ca7;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.goal-edit-button:hover {
+  background: #eef7fc;
 }
 
 .booking-icon {
@@ -654,7 +726,7 @@ button {
 
 .task-row {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto 20px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   min-height: 72px;
@@ -679,9 +751,12 @@ button {
 }
 
 .task-name {
+  display: inline-block;
   color: #426073;
   font-size: 15px;
   font-weight: 600;
+  cursor: pointer;
+  overflow-wrap: anywhere;
 }
 
 .task-due {
@@ -694,6 +769,37 @@ button {
 .task-row.completed .task-name {
   text-decoration: line-through;
   color: #98a5ad;
+}
+
+.task-actions {
+  display: flex;
+  grid-column: 2 / -1;
+  align-items: center;
+  justify-self: end;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-actions .delete-task {
+  min-height: 32px;
+  border: 1px solid #dba4a4;
+  border-radius: 5px;
+  padding: 5px 10px;
+  color: #a52f36;
+  background: #fff4f4;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.task-actions .delete-task:hover {
+  border-color: #a52f36;
+  color: #fff;
+  background: #a52f36;
+}
+
+.task-check {
+  cursor: pointer;
 }
 
 .status {
@@ -742,7 +848,50 @@ button {
   justify-content: center;
 }
 
+.stage-progress-summary {
+  margin-top: 20px;
+}
+
+.stage-progress-summary-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: #456174;
+  font-size: 13px;
+}
+
+.stage-progress-summary-label strong {
+  color: #1d577b;
+}
+
+.stage-progress-track,
+.stage-btn-track {
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce8ef;
+}
+
+.stage-progress-track {
+  height: 10px;
+}
+
+.stage-progress-track > span,
+.stage-btn-track > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #279476;
+  transition: width 220ms ease;
+}
+
 .stage-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   border: 1px solid #8ebee0;
   background: #e4f2fb;
   color: #1d577b;
@@ -752,6 +901,28 @@ button {
   min-height: 46px;
   flex: 1 1 220px;
   max-width: 240px;
+}
+
+.stage-btn-title {
+  min-height: 2.4em;
+  text-align: left;
+}
+
+.stage-btn-track {
+  height: 6px;
+  background: rgba(29, 87, 123, 0.18);
+}
+
+.stage-btn.complete {
+  border-color: #83c5a3;
+  background: #e8f6ee;
+  color: #245d3f;
+}
+
+.stage-btn-status {
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
 }
 
 @media (max-width: 900px) {
@@ -785,10 +956,6 @@ button {
 
   .task-row {
     grid-template-columns: 18px minmax(0, 1fr) auto;
-  }
-
-  .delete-task {
-    justify-self: end;
   }
 
   .goal-row,

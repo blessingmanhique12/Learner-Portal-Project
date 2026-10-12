@@ -25,6 +25,8 @@ class FacilitatorDashboard {
         this.welcome = document.getElementById('facilitatorWelcome');
         this.roleValue = document.getElementById('roleValue');
         this.message = document.getElementById('dashboardMessage');
+        this.dashboard = document.getElementById('facilitatorDashboard');
+        this.loadingScreen = document.getElementById('facilitatorLoading');
         this.logoutButton = document.getElementById('logoutButton');
 
         this.learnerList = document.getElementById('learnerList');
@@ -47,7 +49,11 @@ class FacilitatorDashboard {
         this.facilitatorId = null;
         this.selectedLearner = null;
         this.unsubscribeAssessmentAssignments = null;
+        this.unsubscribeBookings = null;
+        this.unsubscribeAllBookings = null;
+        this.bookingMessageUnsubscribes = new Map();
         this.learnerActivityCache = new Map();
+        this.learnersById = new Map();
 
         this.init();
     }
@@ -61,6 +67,10 @@ class FacilitatorDashboard {
         this.message.className = type
                 ? `message ${type}`
                 : 'message';
+    };
+    showDashboard = () => {
+        this.dashboard.hidden = false;
+        this.loadingScreen.hidden = true;
     };
     redirectToLogin = () => {
         localStorage.removeItem('learnerHubUser');
@@ -371,6 +381,8 @@ class FacilitatorDashboard {
     };
     renderBookings = (bookings) => {
         const container = document.getElementById('learnerBookingsList');
+        this.bookingMessageUnsubscribes.forEach((unsubscribe) => unsubscribe());
+        this.bookingMessageUnsubscribes.clear();
         container.replaceChildren();
 
         if (bookings.length === 0) {
@@ -394,7 +406,88 @@ class FacilitatorDashboard {
                 const date = document.createElement('p');
                 date.textContent = `${booking.preferredDate || 'Date to be confirmed'}${booking.notes ? ` · ${booking.notes}` : ''}`;
                 item.append(heading, date);
-                if (booking.status !== 'completed') {
+
+                if (['pending', 'confirmed'].includes(booking.status || 'pending')) {
+                        const editForm = document.createElement('form');
+                        editForm.className = 'booking-edit-form';
+                        const topicLabel = document.createElement('label');
+                        topicLabel.textContent = 'Session topic';
+                        const topicInput = document.createElement('input');
+                        topicInput.required = true;
+                        topicInput.maxLength = 100;
+                        topicInput.value = booking.topic || '';
+                        topicLabel.appendChild(topicInput);
+                        const preferredDateLabel = document.createElement('label');
+                        preferredDateLabel.textContent = 'Preferred date';
+                        const preferredDate = document.createElement('input');
+                        preferredDate.type = 'date';
+                        preferredDate.required = true;
+                        preferredDate.value = booking.preferredDate || '';
+                        preferredDateLabel.appendChild(preferredDate);
+                        const statusLabel = document.createElement('label');
+                        statusLabel.textContent = 'Status';
+                        const statusInput = document.createElement('select');
+                        ['pending', 'confirmed', 'cancelled'].forEach((value) => {
+                                const option = document.createElement('option');
+                                option.value = value;
+                                option.textContent = value[0].toUpperCase() + value.slice(1);
+                                option.selected = (booking.status || 'pending') === value;
+                                statusInput.appendChild(option);
+                        });
+                        statusLabel.appendChild(statusInput);
+                        const notesLabel = document.createElement('label');
+                        notesLabel.textContent = 'Session notes for the learner';
+                        const notesInput = document.createElement('textarea');
+                        notesInput.maxLength = 500;
+                        notesInput.rows = 2;
+                        notesInput.value = booking.notes || '';
+                        notesLabel.appendChild(notesInput);
+                        const saveButton = document.createElement('button');
+                        saveButton.type = 'submit';
+                        saveButton.textContent = 'Save booking update';
+                        editForm.append(topicLabel, preferredDateLabel, statusLabel, notesLabel, saveButton);
+                        item.appendChild(editForm);
+                        editForm.addEventListener('submit', (event) => {
+                                event.preventDefault();
+                                this.updateFacilitatorBooking(booking, {
+                                        topic: topicInput.value.trim(),
+                                        preferredDate: preferredDate.value,
+                                        notes: notesInput.value.trim(),
+                                        status: statusInput.value
+                                }, saveButton);
+                        });
+                }
+
+                const thread = document.createElement('section');
+                thread.className = 'booking-thread';
+                const threadHeading = document.createElement('h4');
+                threadHeading.textContent = 'Conversation with learner';
+                const messages = document.createElement('div');
+                messages.className = 'booking-messages';
+                messages.setAttribute('aria-live', 'polite');
+                messages.textContent = 'Loading conversation...';
+                thread.append(threadHeading, messages);
+                const replyForm = document.createElement('form');
+                replyForm.className = 'booking-reply-form';
+                const reply = document.createElement('textarea');
+                reply.required = true;
+                reply.maxLength = 1000;
+                reply.rows = 2;
+                reply.placeholder = 'Write a message to the learner';
+                reply.setAttribute('aria-label', 'Message to the learner');
+                const sendButton = document.createElement('button');
+                sendButton.type = 'submit';
+                sendButton.textContent = 'Send response';
+                replyForm.append(reply, sendButton);
+                thread.appendChild(replyForm);
+                item.appendChild(thread);
+                this.subscribeToBookingMessages(booking, messages);
+                replyForm.addEventListener('submit', (event) => {
+                        event.preventDefault();
+                        this.sendBookingMessage(booking, reply, sendButton);
+                });
+
+                if (['pending', 'confirmed'].includes(booking.status || 'pending')) {
                         const completeButton = document.createElement('button');
                         completeButton.type = 'button';
                         completeButton.className = 'complete-booking-button';
@@ -410,6 +503,13 @@ class FacilitatorDashboard {
 
         button.disabled = true;
         try {
+                if (booking.facilitatorId !== this.facilitatorId) {
+                        await updateDoc(doc(db, 'bookings', booking.id), {
+                                facilitatorId: this.facilitatorId,
+                                updatedAt: serverTimestamp(),
+                                updatedBy: this.facilitatorId
+                        });
+                }
                 await updateDoc(doc(db, 'bookings', booking.id), {
                         status: 'completed',
                         completedAt: serverTimestamp(),
@@ -423,6 +523,88 @@ class FacilitatorDashboard {
                 this.setMessage(error.code === 'permission-denied'
                         ? 'Only the booked learner or assigned facilitator can complete this session.'
                         : 'Could not complete this session. Check your connection and try again.', 'error');
+        }
+    };
+    subscribeToBookingMessages = (booking, container) => {
+        const messagesQuery = query(collection(db, 'bookings', booking.id, 'messages'));
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+                const messages = snapshot.docs
+                        .map((messageDocument) => ({ id: messageDocument.id, ...messageDocument.data() }))
+                        .sort((first, second) => this.dateToMillis(first.createdAt) - this.dateToMillis(second.createdAt));
+                container.replaceChildren();
+                if (messages.length === 0) {
+                        container.textContent = 'No messages yet. Send the learner a response.';
+                        return;
+                }
+
+                messages.forEach((message) => {
+                        const entry = document.createElement('article');
+                        entry.className = `booking-message ${message.authorRole === 'facilitator' ? 'from-facilitator' : 'from-learner'}`;
+                        const author = document.createElement('strong');
+                        author.textContent = message.authorRole === 'facilitator' ? 'You' : message.authorName || 'Learner';
+                        const text = document.createElement('p');
+                        text.textContent = message.text;
+                        entry.append(author, text);
+                        container.appendChild(entry);
+                });
+        }, (error) => {
+                console.error('Could not load support booking conversation:', error);
+                container.textContent = error.code === 'permission-denied'
+                        ? 'This booking conversation is assigned to another facilitator.'
+                        : 'Messages could not be loaded. Please try again later.';
+        });
+        this.bookingMessageUnsubscribes.set(booking.id, unsubscribe);
+    };
+    updateFacilitatorBooking = async (booking, changes, button) => {
+        if (!this.facilitatorId) return;
+        button.disabled = true;
+        try {
+                await updateDoc(doc(db, 'bookings', booking.id), {
+                        ...changes,
+                        facilitatorId: this.facilitatorId,
+                        updatedAt: serverTimestamp(),
+                        updatedBy: this.facilitatorId
+                });
+                this.setMessage('Booking details updated. The learner can see the changes now.', 'success');
+        } catch (error) {
+                console.error('Could not update support booking:', error);
+                this.setMessage(error.code === 'permission-denied'
+                        ? 'This booking is assigned to another facilitator or the latest Firestore rules are not published.'
+                        : 'Could not update the booking. Check your connection and try again.', 'error');
+        } finally {
+                button.disabled = false;
+        }
+    };
+    sendBookingMessage = async (booking, input, button) => {
+        const text = input.value.trim();
+        if (!text || !this.facilitatorId) return;
+        button.disabled = true;
+        try {
+                if (booking.facilitatorId !== this.facilitatorId) {
+                        await updateDoc(doc(db, 'bookings', booking.id), {
+                                facilitatorId: this.facilitatorId,
+                                updatedAt: serverTimestamp(),
+                                updatedBy: this.facilitatorId
+                        });
+                }
+                const user = auth.currentUser;
+                const profileSnapshot = await getDoc(doc(db, 'registrations', this.facilitatorId));
+                const profile = profileSnapshot.exists() ? profileSnapshot.data() : {};
+                await addDoc(collection(db, 'bookings', booking.id, 'messages'), {
+                        authorId: this.facilitatorId,
+                        authorName: profile.displayName || profile.username || user?.displayName || 'Facilitator',
+                        authorRole: 'facilitator',
+                        text,
+                        createdAt: serverTimestamp()
+                });
+                input.value = '';
+        } catch (error) {
+                console.error('Could not respond to support booking:', error);
+                this.setMessage(error.code === 'permission-denied'
+                        ? 'This booking is assigned to another facilitator or the latest Firestore rules are not published.'
+                        : 'Could not send the response. Check your connection and try again.', 'error');
+        } finally {
+                button.disabled = false;
         }
     };
     renderAssessmentAssignments = (assignments) => {
@@ -493,6 +675,9 @@ class FacilitatorDashboard {
     };
     openLearnerDetails = async (learner) => {
         this.selectedLearner = learner;
+        if (this.unsubscribeBookings) this.unsubscribeBookings();
+        this.bookingMessageUnsubscribes.forEach((unsubscribe) => unsubscribe());
+        this.bookingMessageUnsubscribes.clear();
         this.learnerDetail.hidden = false;
         document.getElementById('selectedLearnerName').textContent = learner.displayName || learner.username || 'Unnamed learner';
         document.getElementById('selectedLearnerMeta').textContent = `${learner.email || 'No email'} · ${learner.programme || 'Programme not specified'}`;
@@ -528,15 +713,7 @@ class FacilitatorDashboard {
                 this.renderStageProgress(activity);
                 this.renderActivities(activity.scores);
 
-                const bookingsSnapshot = await getDocs(query(
-                        collection(db, 'bookings'),
-                        where('userId', '==', learner.id)
-                ));
-                const bookings = bookingsSnapshot.docs
-                        .map((bookingDocument) => ({ id: bookingDocument.id, ...bookingDocument.data() }))
-                        .sort((first, second) => (first.preferredDate || '').localeCompare(second.preferredDate || ''));
-                learner.bookings = bookings;
-                this.renderBookings(bookings);
+                this.subscribeToLearnerBookings(learner);
         } catch (error) {
                 console.error('Could not load learner activity:', error);
                 document.getElementById('learnerActivityList').textContent = 'Learner activity could not be loaded. Check facilitator Firestore access.';
@@ -544,6 +721,100 @@ class FacilitatorDashboard {
                 document.getElementById('assessmentAssignmentsList').textContent = 'Assessment assignments could not be loaded.';
                 this.setMessage('Could not load this learner’s activity.', 'error');
         }
+    };
+    subscribeToLearnerBookings = (learner) => {
+        const learnerBookingsQuery = query(
+                collection(db, 'bookings'),
+                where('userId', '==', learner.id)
+        );
+        this.unsubscribeBookings = onSnapshot(learnerBookingsQuery, (snapshot) => {
+                const bookings = snapshot.docs
+                        .map((bookingDocument) => ({ id: bookingDocument.id, ...bookingDocument.data() }))
+                        .sort((first, second) => (first.preferredDate || '').localeCompare(second.preferredDate || ''));
+                learner.bookings = bookings;
+                this.renderBookings(bookings);
+        }, (error) => {
+                console.error('Could not subscribe to learner support bookings:', error);
+                document.getElementById('learnerBookingsList').textContent =
+                        error.code === 'permission-denied'
+                                ? 'Support booking access was denied. Confirm facilitator Firestore access.'
+                                : 'Support bookings could not be loaded. Check your connection and try again.';
+        });
+    };
+    subscribeToAllBookings = () => {
+        if (this.unsubscribeAllBookings) this.unsubscribeAllBookings();
+
+        this.unsubscribeAllBookings = onSnapshot(query(collection(db, 'bookings')), (snapshot) => {
+                const bookings = snapshot.docs
+                        .map((bookingDocument) => ({ id: bookingDocument.id, ...bookingDocument.data() }))
+                        .sort((first, second) =>
+                                this.dateToMillis(second.createdAt) - this.dateToMillis(first.createdAt)
+                        );
+                this.renderSupportBookingInbox(bookings);
+        }, (error) => {
+                console.error('Could not load the support booking inbox:', error);
+                document.getElementById('supportBookingInbox').textContent =
+                        error.code === 'permission-denied'
+                                ? 'Support booking access was denied. Confirm the latest Firestore rules are published and this account has the facilitator role.'
+                                : 'Support bookings could not be loaded. Check your connection and try again.';
+                document.getElementById('supportBookingCount').textContent = 'Unavailable';
+        });
+    };
+    renderSupportBookingInbox = (bookings) => {
+        const container = document.getElementById('supportBookingInbox');
+        const count = document.getElementById('supportBookingCount');
+        if (!container || !count) return;
+
+        count.textContent = `${bookings.length} ${bookings.length === 1 ? 'booking' : 'bookings'}`;
+        container.replaceChildren();
+        if (bookings.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = 'No learner support bookings yet.';
+                container.appendChild(empty);
+                return;
+        }
+
+        bookings.forEach((booking) => {
+                const learner = this.learnersById.get(booking.userId);
+                const card = document.createElement('article');
+                card.className = 'support-booking-card';
+
+                const heading = document.createElement('div');
+                heading.className = 'activity-item-heading';
+                const topic = document.createElement('h3');
+                topic.textContent = booking.topic || 'Support session';
+                const status = document.createElement('strong');
+                status.className = `booking-inbox-status ${String(booking.status || 'pending').toLowerCase()}`;
+                status.textContent = booking.status || 'pending';
+                heading.append(topic, status);
+
+                const learnerName = document.createElement('p');
+                learnerName.className = 'support-booking-learner';
+                learnerName.textContent = `Learner: ${learner?.displayName || learner?.username || booking.learnerName || 'Learner'}`;
+                const date = document.createElement('p');
+                date.textContent = `Preferred date: ${booking.preferredDate || 'To be arranged'}`;
+                const notes = document.createElement('p');
+                notes.textContent = booking.notes || 'No additional notes.';
+                const openButton = document.createElement('button');
+                openButton.type = 'button';
+                openButton.className = 'learner-open-button';
+                openButton.textContent = 'View and respond';
+                openButton.disabled = !learner;
+                openButton.title = learner ? '' : 'This learner profile could not be loaded.';
+                openButton.addEventListener('click', async () => {
+                        if (!learner) return;
+                        await this.openLearnerDetails(learner);
+                        document.getElementById('learnerViewSelector').value = 'bookingsSection';
+                        this.showLearnerDetailSection('bookingsSection');
+                        document.getElementById('bookingsSection').scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                        });
+                });
+                card.append(heading, learnerName, date, notes, openButton);
+                container.appendChild(card);
+        });
     };
     loadLearners = async () => {
 
@@ -590,6 +861,7 @@ class FacilitatorDashboard {
                 }
         }));
 
+        this.learnersById = new Map(learnersWithActivity.map((learner) => [learner.id, learner]));
         this.displayLearners(learnersWithActivity);
     };
 
@@ -641,6 +913,12 @@ class FacilitatorDashboard {
                         this.unsubscribeAssessmentAssignments();
                         this.unsubscribeAssessmentAssignments = null;
                 }
+                if (this.unsubscribeBookings) {
+                        this.unsubscribeBookings();
+                        this.unsubscribeBookings = null;
+                }
+                this.bookingMessageUnsubscribes.forEach((unsubscribe) => unsubscribe());
+                this.bookingMessageUnsubscribes.clear();
                 this.learnerDetail.hidden = true;
                 this.selectedLearner = null;
         });
@@ -753,8 +1031,10 @@ class FacilitatorDashboard {
                         );
 
                         await this.loadLearners();
+                        this.subscribeToAllBookings();
 
                         this.setMessage('Firebase session connected.');
+                        this.showDashboard();
 
                 } catch (error) {
 
@@ -768,6 +1048,7 @@ class FacilitatorDashboard {
                                 'Could not load the facilitator dashboard.',
                                 'error'
                         );
+                        this.showDashboard();
                 }
         });
 

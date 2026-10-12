@@ -98,7 +98,7 @@ The project is configured for Firebase Hosting and uses the existing Firebase pr
 
 1. Install the Firebase CLI: `npm install -g firebase-tools`.
 2. Sign in: `firebase login`.
-3. From the project root, publish the site: `firebase deploy --only hosting`.
+3. From the project root, publish the site and Firestore rules: `firebase deploy --only hosting,firestore:rules`.
 4. Open the Hosting URL printed by Firebase. It will be available from any computer with an internet connection.
 
 The root `index.html` redirects visitors to the login page. Firebase Authentication accounts work across computers. Programme progress is currently stored in browser `localStorage`, so progress is specific to the browser/device until it is moved to Firestore.

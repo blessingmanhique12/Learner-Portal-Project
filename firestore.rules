@@ -364,44 +364,141 @@ service cloud.firestore {
           || isFacilitator()
         );
 
-      // Only facilitators can create bookings.
-      allow create: if isFacilitator()
-        && request.resource.data.userId is string
-        && request.resource.data.facilitatorId == request.auth.uid
-        && request.resource.data.createdBy == request.auth.uid
-
-        && get(
-          /databases/$(database)/documents/registrations/$(request.resource.data.userId)
-        ).data.role == 'learner'
-
-        && request.resource.data.topic is string
-        && request.resource.data.preferredDate is string
-        && request.resource.data.notes is string
-        && request.resource.data.status == 'pending';
-
-      // Learner/facilitator can mark booking as completed
-      // according to ownership rules.
-      allow update: if isSignedIn()
-        && resource.data.status in ['pending', 'confirmed']
-        && request.resource.data.status == 'completed'
-        && request.resource.data.completedBy == request.auth.uid
-        && request.resource.data.completedAt == request.time
-
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly([
+      // Learners can create their own requests; facilitators can book for a learner.
+      allow create: if (
+          isSignedIn()
+          && request.resource.data.keys().hasOnly([
+            'userId',
+            'topic',
+            'preferredDate',
+            'notes',
             'status',
-            'completedAt',
-            'completedBy'
+            'createdAt'
           ])
-
-        && (
-          resource.data.userId == request.auth.uid
-          ||
-          (
-            resource.data.facilitatorId == request.auth.uid
-            && isFacilitator()
-          )
+          && request.resource.data.userId == request.auth.uid
+          && get(
+            /databases/$(database)/documents/registrations/$(request.auth.uid)
+          ).data.role == 'learner'
+          && request.resource.data.topic is string
+          && request.resource.data.topic.size() > 0
+          && request.resource.data.topic.size() <= 80
+          && request.resource.data.preferredDate is string
+          && request.resource.data.preferredDate.size() == 10
+          && request.resource.data.notes is string
+          && request.resource.data.notes.size() <= 200
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt == request.time
+        )
+        || (
+          isFacilitator()
+          && request.resource.data.userId is string
+          && request.resource.data.facilitatorId == request.auth.uid
+          && request.resource.data.createdBy == request.auth.uid
+          && get(
+            /databases/$(database)/documents/registrations/$(request.resource.data.userId)
+          ).data.role == 'learner'
+          && request.resource.data.topic is string
+          && request.resource.data.preferredDate is string
+          && request.resource.data.notes is string
+          && request.resource.data.status == 'pending'
         );
+
+      // Learners and assigned facilitators can mark a booking as completed.
+      allow update: if (
+          isSignedIn()
+          && resource.data.status in ['pending', 'confirmed']
+          && request.resource.data.status == 'completed'
+          && request.resource.data.completedBy == request.auth.uid
+          && request.resource.data.completedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'status',
+              'completedAt',
+              'completedBy'
+            ])
+          && (
+            resource.data.userId == request.auth.uid
+            || (
+              resource.data.facilitatorId == request.auth.uid
+              && isFacilitator()
+            )
+          )
+        )
+        || (
+          isFacilitator()
+          && resource.data.status in ['pending', 'confirmed']
+          && resource.data.userId is string
+          && get(
+            /databases/$(database)/documents/registrations/$(resource.data.userId)
+          ).data.role == 'learner'
+          && (!('facilitatorId' in resource.data)
+            || resource.data.facilitatorId == request.auth.uid)
+          && request.resource.data.facilitatorId == request.auth.uid
+          && request.resource.data.updatedBy == request.auth.uid
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'topic',
+              'preferredDate',
+              'notes',
+              'status',
+              'facilitatorId',
+              'updatedAt',
+              'updatedBy'
+            ])
+          && request.resource.data.topic is string
+          && request.resource.data.topic.size() > 0
+          && request.resource.data.topic.size() <= 100
+          && request.resource.data.preferredDate is string
+          && request.resource.data.preferredDate.size() == 10
+          && request.resource.data.notes is string
+          && request.resource.data.notes.size() <= 500
+          && request.resource.data.status in ['pending', 'confirmed', 'cancelled']
+        );
+
+      match /messages/{messageId} {
+        function booking() {
+          return get(
+            /databases/$(database)/documents/bookings/$(bookingId)
+          ).data;
+        }
+
+        function canAccessThread() {
+          return isSignedIn()
+            && (
+              booking().userId == request.auth.uid
+              || (
+                isFacilitator()
+                && (!('facilitatorId' in booking())
+                  || booking().facilitatorId == request.auth.uid)
+              )
+            );
+        }
+
+        allow read: if canAccessThread();
+
+        allow create: if canAccessThread()
+          && request.resource.data.keys().hasOnly([
+            'authorId',
+            'authorName',
+            'authorRole',
+            'text',
+            'createdAt'
+          ])
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.authorRole == get(
+            /databases/$(database)/documents/registrations/$(request.auth.uid)
+          ).data.role
+          && request.resource.data.authorRole in ['learner', 'facilitator']
+          && request.resource.data.authorName is string
+          && request.resource.data.authorName.size() <= 100
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time;
+
+        allow update, delete: if false;
+      }
 
       allow delete: if false;
     }
